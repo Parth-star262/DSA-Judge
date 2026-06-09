@@ -1,0 +1,229 @@
+// This is your Prisma schema file
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String       @id @default(uuid())
+  name         String
+  email        String       @unique
+  passwordHash String
+  role         Role         @default(FREE)
+  createdAt    DateTime     @default(now())
+  submissions  Submission[]
+  progress     UserProgress[]
+  streak       Streak?
+  bookmarks    Bookmark[]
+  collections  Collection[]
+  comments     Comment[]
+  ratings      Rating[]
+  badges       Badge[]
+}
+
+enum Role {
+  FREE
+  ENROLLED
+  ADMIN
+}
+
+model Topic {
+  id       String    @id @default(uuid())
+  name     String
+  slug     String    @unique
+  order    Int
+  problems Problem[]
+}
+
+model Problem {
+  id               String        @id @default(uuid())
+  slug             String        @unique
+  title            String
+  difficulty       Difficulty
+  description      String
+  constraints      String
+  inputFormat      String
+  outputFormat     String
+  optimalComplexity String       @default("O(N)")
+  targetedTimeComplexity String?
+  targetedSpaceComplexity String?
+  isPremium        Boolean       @default(false)  
+  judgeConfig      Json?
+  topicId          String
+  topic            Topic         @relation(fields: [topicId], references: [id])
+  testCases        TestCase[]
+  hints            Hint[]
+  editorial        Editorial?
+  companyTags      CompanyTag[]
+  submissions      Submission[]
+  progress         UserProgress[]
+  scalingInputs    ScalingInput[]
+  bookmarks        Bookmark[]
+  collections      Collection[] @relation("CollectionProblems")
+  comments         Comment[]
+  ratings          Rating[]
+  createdAt        DateTime      @default(now())
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+model TestCase {
+  id             String  @id @default(uuid())
+  problemId      String
+  problem        Problem @relation(fields: [problemId], references: [id])
+  input          String
+  expectedOutput String
+  explanation    String  @default("")
+  isSample       Boolean @default(false)
+  points         Int     @default(1)
+}
+
+model ScalingInput {
+  id        String  @id @default(uuid())
+  problemId String
+  problem   Problem @relation(fields: [problemId], references: [id])
+  n         Int
+  input     String
+}
+
+model Hint {
+  id        String  @id @default(uuid())
+  problemId String
+  problem   Problem @relation(fields: [problemId], references: [id])
+  level     Int     // 1, 2, or 3
+  content   String
+}
+
+model Editorial {
+  id        String  @id @default(uuid())
+  problemId String  @unique
+  problem   Problem @relation(fields: [problemId], references: [id])
+  content   String  // Markdown
+  videoUrl  String?
+}
+
+model CompanyTag {
+  id          String  @id @default(uuid())
+  problemId   String
+  problem     Problem @relation(fields: [problemId], references: [id])
+  companyName String
+}
+
+model Submission {
+  id                String    @id @default(uuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id])
+  problemId         String
+  problem           Problem   @relation(fields: [problemId], references: [id])
+  code              String
+  language          String
+  verdict           Verdict   @default(PENDING)
+  score             Int       @default(0)
+  totalCases        Int       @default(0)
+  passedCases       Int       @default(0)
+  executionTime     Float?
+  complexityEstimate String?
+  submittedAt       DateTime  @default(now())
+}
+
+enum Verdict {
+  PENDING
+  ACCEPTED
+  PARTIAL
+  WRONG_ANSWER
+  TLE
+  RUNTIME_ERROR
+}
+
+model UserProgress {
+  id        String         @id @default(uuid())
+  userId    String
+  user      User           @relation(fields: [userId], references: [id])
+  problemId String
+  problem   Problem        @relation(fields: [problemId], references: [id])
+  status    ProgressStatus @default(ATTEMPTED)
+
+  @@unique([userId, problemId])
+}
+
+enum ProgressStatus {
+  SOLVED
+  ATTEMPTED
+  REVISIT
+}
+
+model Streak {
+  id              String    @id @default(uuid())
+  userId          String    @unique
+  user            User      @relation(fields: [userId], references: [id])
+  currentStreak   Int       @default(0)
+  longestStreak   Int       @default(0)
+  lastSolvedAt    DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model Bookmark {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  problemId   String
+  problem     Problem   @relation(fields: [problemId], references: [id])
+  createdAt   DateTime  @default(now())
+
+  @@unique([userId, problemId])
+}
+
+model Collection {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  name        String
+  description String?
+  problems    Problem[] @relation("CollectionProblems")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Comment {
+  id          String    @id @default(uuid())
+  problemId   String
+  problem     Problem   @relation(fields: [problemId], references: [id])
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  content     String
+  upvotes     Int       @default(0)
+  language    String?
+  submittedAt DateTime  @default(now())
+}
+
+model Rating {
+  id          String    @id @default(uuid())
+  problemId   String
+  problem     Problem   @relation(fields: [problemId], references: [id])
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  stars       Int
+  review      String?
+  submittedAt DateTime  @default(now())
+
+  @@unique([userId, problemId])
+}
+
+model Badge {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  badgeType   String
+  problemId   String?
+  awardedAt   DateTime  @default(now())
+}

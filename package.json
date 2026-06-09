@@ -1,0 +1,20 @@
+{
+  "name": "dsa-judge",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "setup": "npm --prefix backend install && npm --prefix frontend install",
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:worker": "npm --prefix backend run worker",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev": "concurrently --kill-others-on-fail -n api,worker,web -c cyan,yellow,magenta \"npm run dev:backend\" \"npm run dev:worker\" \"npm run dev:frontend\"",
+    "lint": "npm --prefix frontend run lint",
+    "typecheck": "npm --prefix frontend run typecheck",
+    "db:generate": "npm --prefix backend run prisma:generate",
+    "db:push": "npm --prefix backend exec prisma db push",
+    "db:seed": "npm --prefix backend run seed"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
