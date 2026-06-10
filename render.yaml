@@ -8,7 +8,6 @@ services:
     rootDir: backend
     buildCommand: npm ci && npx prisma generate
     startCommand: npm start
-    releaseCommand: npx prisma migrate deploy && node prisma/seed.js
     envVars:
       - key: PORT
         value: "5001"
