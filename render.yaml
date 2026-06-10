@@ -5,7 +5,7 @@ services:
     plan: free
     branch: main
     repo: https://github.com/Parth-star262/DSA-Judge
-    root: backend
+    rootDir: backend
     buildCommand: npm ci && npx prisma generate
     startCommand: npm start
     releaseCommand: npx prisma migrate deploy && node prisma/seed.js
@@ -33,7 +33,7 @@ services:
     plan: free
     branch: main
     repo: https://github.com/Parth-star262/DSA-Judge
-    root: backend
+    rootDir: backend
     buildCommand: npm ci && npx prisma generate
     startCommand: npm run worker
     envVars:
