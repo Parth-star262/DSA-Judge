@@ -23,3 +23,13 @@ frontend/.env.local
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+*.zip
+
+node_modules/
+
+frontend/node_modules/
+
+.next/
+
+frontend/.next/
