@@ -46,6 +46,14 @@ app.get('/health', (req, res) => res.json({ status: 'ok' }));
 const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
+  const { exec } = require('child_process');
+  exec('which g++', (err, stdout, stderr) => {
+    console.log(`[Diagnostic] which g++: stdout="${stdout.trim()}" stderr="${stderr.trim()}" err=${err ? err.message : 'null'}`);
+  });
+  exec('g++ --version', (err, stdout, stderr) => {
+    console.log(`[Diagnostic] g++ --version: stdout="${stdout.trim()}" stderr="${stderr.trim()}" err=${err ? err.message : 'null'}`);
+  });
+
   app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
   });

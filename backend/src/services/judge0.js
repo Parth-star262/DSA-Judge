@@ -15,12 +15,7 @@ const LANGUAGE_IDS = {
 
 const runCommand = (command, args, options = {}) =>
   new Promise((resolve) => {
-    const child = spawn(command, args, {
-      cwd: options.cwd,
-      shell: false,
-      stdio: 'pipe',
-    });
-
+    let child;
     let stdout = '';
     let stderr = '';
     let timedOut = false;
@@ -28,8 +23,26 @@ const runCommand = (command, args, options = {}) =>
 
     const timer = setTimeout(() => {
       timedOut = true;
-      child.kill('SIGKILL');
+      if (child) child.kill('SIGKILL');
     }, options.timeoutMs || RUN_TIMEOUT_MS);
+
+    try {
+      child = spawn(command, args, {
+        cwd: options.cwd,
+        shell: false,
+        stdio: 'pipe',
+      });
+    } catch (err) {
+      console.error(`[runCommand] Synchronous spawn error for ${command}:`, err);
+      clearTimeout(timer);
+      return resolve({
+        code: 1,
+        stdout,
+        stderr: stderr + err.message,
+        timedOut,
+        timeSeconds: 0,
+      });
+    }
 
     child.stdout.on('data', (data) => {
       stdout += data.toString();
@@ -40,6 +53,7 @@ const runCommand = (command, args, options = {}) =>
     });
 
     child.on('error', (err) => {
+      console.error(`[runCommand] Child process error event for ${command}:`, err);
       clearTimeout(timer);
       const elapsedNs = process.hrtime.bigint() - startedAt;
       resolve({
@@ -81,6 +95,8 @@ const executeCpp = async (workDir, code, stdin) => {
     cwd: workDir,
     timeoutMs: COMPILE_TIMEOUT_MS,
   });
+
+  console.log(`[executeCpp] Compilation result: code=${compile.code}, stdout="${compile.stdout}", stderr="${compile.stderr}"`);
 
   if (compile.code !== 0) {
     return {

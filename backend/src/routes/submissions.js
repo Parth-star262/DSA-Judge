@@ -100,7 +100,7 @@ router.post('/run', auth, async (req, res) => {
       verdict = 'COMPLETED';
     }
 
-    res.json({
+    const payload = {
       verdict,
       score,
       passedCases,
@@ -112,7 +112,10 @@ router.post('/run', auth, async (req, res) => {
       spaceComplexityEstimate,
       optimalSpaceComplexity,
       spaceComplexityMatch: !!(optimalSpaceComplexity && spaceComplexityEstimate === optimalSpaceComplexity),
-    });
+    };
+
+    console.log(`[Run Path Response] Payload:\n${JSON.stringify(payload, null, 2)}`);
+    res.json(payload);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
