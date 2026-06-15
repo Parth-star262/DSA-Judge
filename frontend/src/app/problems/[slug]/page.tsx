@@ -127,6 +127,9 @@ interface SubmissionResult {
   };
 }
 
+const POLL_INTERVAL_MS = 1500;
+const POLL_ATTEMPTS = 120;
+
 export default function ProblemPage() {
   const params = useParams();
   const router = useRouter();
@@ -246,10 +249,14 @@ export default function ProblemPage() {
   }, [runResult, submitResult]);
 
   const pollResult = useCallback(async (submissionId: string): Promise<SubmissionResult | null> => {
-    for (let i = 0; i < 30; i++) {
-      await new Promise(r => setTimeout(r, 1500));
-      const res = await api.get(`/submissions/${submissionId}`);
-      if (res.data.verdict !== 'PENDING') return res.data;
+    for (let i = 0; i < POLL_ATTEMPTS; i++) {
+      await new Promise(r => setTimeout(r, POLL_INTERVAL_MS));
+      try {
+        const res = await api.get(`/submissions/${submissionId}`);
+        if (res.data.verdict !== 'PENDING') return res.data;
+      } catch (error) {
+        if (i === POLL_ATTEMPTS - 1) throw error;
+      }
     }
     return null;
   }, []);
@@ -310,7 +317,27 @@ export default function ProblemPage() {
         .then((result) => {
           if (result) {
             setSubmitResult(result);
+          } else {
+            setSubmitResult({
+              verdict: 'RUNTIME_ERROR',
+              score: 0,
+              passedCases: 0,
+              totalCases: problem?.testCases?.length || 0,
+              stderr: 'Judging timed out. Check that the submission worker is running and connected to the same Redis instance.',
+            });
           }
+        })
+        .catch((error: unknown) => {
+          const message = axios.isAxiosError(error)
+            ? error.response?.data?.error || error.message
+            : 'Unable to retrieve the submission result.';
+          setSubmitResult({
+            verdict: 'RUNTIME_ERROR',
+            score: 0,
+            passedCases: 0,
+            totalCases: problem?.testCases?.length || 0,
+            stderr: `Polling failed: ${message}`,
+          });
         })
         .finally(() => setSubmissionTracking(false));
     } catch (error: unknown) {
@@ -349,7 +376,10 @@ export default function ProblemPage() {
   const cleanedDescription = stripInlineExamples(problem.description);
 
   return (
-    <div className="problem-layout" style={{ height: 'calc(100vh - 64px)', position: 'relative', gridTemplateColumns: `${leftWidth}% 1fr`, transition: 'grid-template-columns 140ms ease', overflow: 'hidden' }}>
+    <div
+      className="problem-layout"
+      style={{ '--left-width': `${leftWidth}%` } as React.CSSProperties}
+    >
 
       {/* LEFT PANEL — Problem description */}
       <div className="problem-left" style={{ display: 'flex', flexDirection: 'column', borderRight: '1px solid var(--border)', overflow: 'hidden', minHeight: 0, height: '100%' }}>
@@ -390,7 +420,7 @@ export default function ProblemPage() {
         </div>
 
         {/* Tab content */}
-        <div style={{ flex: 1, overflow: 'auto', padding: '20px 20px 80px 20px' }}>
+        <div className="problem-description-scroll">
 
           {/* Description */}
           {tab === 'description' && (
@@ -597,7 +627,7 @@ export default function ProblemPage() {
       </div>
 
       {/* RIGHT PANEL — Editor + Results */}
-      <div className="problem-right" style={{ display: 'grid', gridTemplateRows: showOutput ? `minmax(0, calc(100% - 48px - ${outputHeightPercent}%)) 48px ${outputHeightPercent}%` : 'minmax(0, 1fr) 48px 0px', overflow: 'hidden', background: 'var(--surface)', minHeight: 0, height: '100%' }}>
+      <div className="problem-right" style={{ gridTemplateRows: showOutput ? `minmax(240px, 1fr) 52px minmax(180px, ${outputHeightPercent}%)` : 'minmax(0, 1fr) 52px 0px' }}>
         {/* Editor */}
         <div style={{ minHeight: 0, minWidth: 0, overflow: 'hidden' }}>
           <Editor
@@ -620,7 +650,7 @@ export default function ProblemPage() {
           borderTop: '1px solid var(--border)',
           borderBottom: showOutput ? '1px solid var(--border)' : 'none',
           background: 'var(--surface)',
-          height: '48px',
+          minHeight: '52px',
           boxSizing: 'border-box',
         }}>
           {/* Vertical Drag Handle (placed at the top edge of the action bar) */}
@@ -690,7 +720,6 @@ export default function ProblemPage() {
           overflowY: 'auto',
           overflowX: 'hidden',
           minHeight: 0,
-          maxHeight: '100%',
           position: 'relative',
           scrollbarGutter: 'stable',
           overscrollBehavior: 'contain',
@@ -783,7 +812,7 @@ export default function ProblemPage() {
               {runResult?.output && !runLoading && !submitLoading && (
                 <div className="flex-height" style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                   <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 6 }}>Your Output</div>
-                  <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', fontFamily: "'JetBrains Mono', monospace", fontSize: 13, whiteSpace: 'pre-wrap', wordBreak: 'break-all', color: '#e2e2f0', lineHeight: 1.7, overflow: 'auto' }}>
+                  <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', fontFamily: "'JetBrains Mono', monospace", fontSize: 13, whiteSpace: 'pre-wrap', wordBreak: 'break-all', color: '#e2e2f0', lineHeight: 1.7 }}>
                     {runResult.output}
                   </div>
                 </div>
@@ -807,6 +836,7 @@ export default function ProblemPage() {
       </div>
       {/* Vertical drag handle between left and right panels */}
       <div
+        className="problem-layout-divider"
         onMouseDown={startWidthResize}
         onDoubleClick={() => setLeftWidth(42)}
         onMouseEnter={() => setIsHoveringDivider(true)}
@@ -847,9 +877,12 @@ export default function ProblemPage() {
       <style jsx>{`
         .problem-layout {
           display: grid;
-          grid-template-columns: minmax(340px, 42%) minmax(0, 1fr);
+          grid-template-columns: minmax(340px, var(--left-width, 42%)) minmax(0, 1fr);
+          height: calc(100dvh - 64px);
           min-height: 0;
+          position: relative;
           overflow: hidden;
+          transition: grid-template-columns 140ms ease;
         }
 
         .problem-left,
@@ -858,7 +891,21 @@ export default function ProblemPage() {
           min-height: 0;
         }
 
-        /* .right-bottom-panel is now controlled by inline styles */
+        .problem-right {
+          display: grid;
+          overflow: hidden;
+          background: var(--surface);
+          height: 100%;
+        }
+
+        .problem-description-scroll {
+          flex: 1;
+          min-height: 0;
+          overflow-y: auto;
+          overflow-x: hidden;
+          padding: 24px 24px 48px;
+          overscroll-behavior: contain;
+        }
 
         .action-bar {
           flex-wrap: wrap;
@@ -871,19 +918,31 @@ export default function ProblemPage() {
 
         @media (max-width: 1200px) {
           .problem-layout {
-            grid-template-columns: minmax(320px, 46%) minmax(0, 1fr);
+            grid-template-columns: minmax(320px, var(--left-width, 46%)) minmax(0, 1fr);
           }
         }
 
         @media (max-width: 980px) {
           .problem-layout {
             grid-template-columns: 1fr;
-            grid-template-rows: minmax(280px, 48%) minmax(280px, 52%);
+            grid-template-rows: minmax(360px, 46%) minmax(440px, 54%);
+            height: auto;
+            min-height: calc(100dvh - 64px);
+            overflow: visible;
           }
 
           .problem-left {
             border-right: none;
             border-bottom: 1px solid var(--border);
+            min-height: 480px;
+          }
+
+          .problem-right {
+            min-height: 640px;
+          }
+
+          .problem-layout-divider {
+            display: none !important;
           }
 
           .action-bar {
@@ -893,20 +952,24 @@ export default function ProblemPage() {
 
         @media (max-width: 720px) {
           .problem-layout {
-            height: auto;
-            min-height: calc(100vh - 64px);
-            overflow: auto;
+            display: flex;
+            flex-direction: column;
           }
 
-          .problem-left,
+          .problem-left {
+            height: min(68dvh, 720px) !important;
+            min-height: 480px;
+          }
+
           .problem-right {
-            overflow: visible;
+            height: max(720px, calc(100dvh - 64px)) !important;
+            min-height: 720px;
           }
 
           .action-bar {
-            position: static;
             flex-wrap: wrap;
             row-gap: 8px;
+            min-height: 96px !important;
           }
 
           .action-bar > :global(div) {

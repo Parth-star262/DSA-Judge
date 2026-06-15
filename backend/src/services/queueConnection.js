@@ -1,3 +1,5 @@
+const SUBMISSION_QUEUE_NAME = 'submissions';
+
 const buildQueueConnection = () => {
   const redisUrl = process.env.REDIS_URL;
 
@@ -21,4 +23,19 @@ const buildQueueConnection = () => {
   }
 };
 
-module.exports = { buildQueueConnection };
+const describeQueueConnection = () => {
+  const connection = buildQueueConnection();
+  return {
+    host: connection.host,
+    port: connection.port,
+    db: connection.db ?? 0,
+    tls: Boolean(connection.tls),
+    username: connection.username ? 'configured' : 'default',
+  };
+};
+
+module.exports = {
+  SUBMISSION_QUEUE_NAME,
+  buildQueueConnection,
+  describeQueueConnection,
+};

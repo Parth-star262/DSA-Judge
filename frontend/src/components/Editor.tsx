@@ -47,7 +47,7 @@ export default function Editor({ code, language, onCodeChange, onLanguageChange 
       </div>
 
       {/* Monaco Editor */}
-      <div style={{ flex: 1 }}>
+      <div style={{ flex: 1, minHeight: 0, minWidth: 0 }}>
         <MonacoEditor
           height="100%"
           language={language === 'cpp' ? 'cpp' : language}
