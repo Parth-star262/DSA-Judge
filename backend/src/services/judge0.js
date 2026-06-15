@@ -3,7 +3,7 @@ const os = require('os');
 const path = require('path');
 const { spawn } = require('child_process');
 
-const COMPILE_TIMEOUT_MS = 10_000;
+const COMPILE_TIMEOUT_MS = 60_000;
 const RUN_TIMEOUT_MS = 3_000;
 
 const LANGUAGE_IDS = {
@@ -20,10 +20,27 @@ const runCommand = (command, args, options = {}) =>
     let stderr = '';
     let timedOut = false;
     const startedAt = process.hrtime.bigint();
+    let resolved = false;
+
+    const safeResolve = (val) => {
+      if (resolved) return;
+      resolved = true;
+      resolve(val);
+    };
 
     const timer = setTimeout(() => {
       timedOut = true;
-      if (child) child.kill('SIGKILL');
+      if (child) {
+        console.log(`[runCommand] Process timeout reached for ${command}. Killing pid: ${child.pid}`);
+        child.kill('SIGKILL');
+      }
+      safeResolve({
+        code: 1,
+        stdout,
+        stderr: stderr + `\nProcess timed out after ${options.timeoutMs || RUN_TIMEOUT_MS}ms.`,
+        timedOut: true,
+        timeSeconds: Number(process.hrtime.bigint() - startedAt) / 1e9,
+      });
     }, options.timeoutMs || RUN_TIMEOUT_MS);
 
     console.log(
@@ -45,7 +62,7 @@ const runCommand = (command, args, options = {}) =>
     } catch (err) {
       console.error(`[runCommand] Synchronous spawn error for ${command}:`, err);
       clearTimeout(timer);
-      return resolve({
+      return safeResolve({
         code: 1,
         stdout,
         stderr: stderr + err.message,
@@ -69,7 +86,7 @@ const runCommand = (command, args, options = {}) =>
       );
       clearTimeout(timer);
       const elapsedNs = process.hrtime.bigint() - startedAt;
-      resolve({
+      safeResolve({
         code: 1,
         stdout,
         stderr: stderr + err.message,
@@ -85,7 +102,7 @@ const runCommand = (command, args, options = {}) =>
       );
       clearTimeout(timer);
       const elapsedNs = process.hrtime.bigint() - startedAt;
-      resolve({
+      safeResolve({
         code: code ?? 1,
         stdout,
         stderr,
@@ -103,6 +120,8 @@ const runCommand = (command, args, options = {}) =>
 const executeCpp = async (workDir, code, stdin) => {
   try {
     console.log("[executeCpp] ENTER");
+    console.log(`[executeCpp] Source code length (chars): ${code.length}`);
+    console.log(`[executeCpp] Current COMPILE_TIMEOUT_MS: ${COMPILE_TIMEOUT_MS}ms`);
 
     const sourceFile = path.join(workDir, 'main.cpp');
     const binaryFile = path.join(workDir, process.platform === 'win32' ? 'main.exe' : 'main');
@@ -122,6 +141,17 @@ const executeCpp = async (workDir, code, stdin) => {
 
     console.log("[executeCpp] Compile completed");
     console.log(JSON.stringify(compile, null, 2));
+
+    if (compile.timedOut) {
+      console.error(`[executeCpp] Compilation timed out after ${COMPILE_TIMEOUT_MS}ms`);
+      return {
+        statusId: 6,
+        statusDesc: 'Compilation Error',
+        stdout: '',
+        stderr: `Compilation timed out after ${COMPILE_TIMEOUT_MS}ms. Render free-tier CPU limit may have throttled the compiler.`,
+        time: 0,
+      };
+    }
 
     if (compile.code !== 0) {
       return {
