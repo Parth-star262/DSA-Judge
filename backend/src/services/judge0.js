@@ -26,12 +26,22 @@ const runCommand = (command, args, options = {}) =>
       if (child) child.kill('SIGKILL');
     }, options.timeoutMs || RUN_TIMEOUT_MS);
 
+    console.log(
+      "[runCommand] launching:",
+      command,
+      args.join(" ")
+    );
+
     try {
       child = spawn(command, args, {
         cwd: options.cwd,
         shell: false,
         stdio: 'pipe',
       });
+      console.log(
+        "[runCommand] pid:",
+        child.pid
+      );
     } catch (err) {
       console.error(`[runCommand] Synchronous spawn error for ${command}:`, err);
       clearTimeout(timer);
@@ -53,7 +63,10 @@ const runCommand = (command, args, options = {}) =>
     });
 
     child.on('error', (err) => {
-      console.error(`[runCommand] Child process error event for ${command}:`, err);
+      console.error(
+        "[runCommand] error:",
+        err
+      );
       clearTimeout(timer);
       const elapsedNs = process.hrtime.bigint() - startedAt;
       resolve({
@@ -66,6 +79,10 @@ const runCommand = (command, args, options = {}) =>
     });
 
     child.on('close', (code) => {
+      console.log(
+        "[runCommand] closed:",
+        code
+      );
       clearTimeout(timer);
       const elapsedNs = process.hrtime.bigint() - startedAt;
       resolve({
@@ -84,41 +101,61 @@ const runCommand = (command, args, options = {}) =>
   });
 
 const executeCpp = async (workDir, code, stdin) => {
-  const sourceFile = path.join(workDir, 'main.cpp');
-  const binaryFile = path.join(workDir, process.platform === 'win32' ? 'main.exe' : 'main');
-  await fs.writeFile(sourceFile, code, 'utf8');
+  try {
+    console.log("[executeCpp] ENTER");
 
-  console.log(`[executeCpp] Written source file to ${sourceFile}. Total chars: ${code.length}`);
-  console.log(`[executeCpp] Exact main.cpp source:\n${code}\n[executeCpp] --- End of main.cpp ---`);
+    const sourceFile = path.join(workDir, 'main.cpp');
+    const binaryFile = path.join(workDir, process.platform === 'win32' ? 'main.exe' : 'main');
 
-  const compile = await runCommand('g++', ['-std=c++17', '-O2', sourceFile, '-o', binaryFile], {
-    cwd: workDir,
-    timeoutMs: COMPILE_TIMEOUT_MS,
-  });
+    console.log("[executeCpp] Writing source");
+    await fs.writeFile(sourceFile, code, 'utf8');
+    console.log("[executeCpp] Source written");
 
-  console.log(`[executeCpp] Compilation result: code=${compile.code}, stdout="${compile.stdout}", stderr="${compile.stderr}"`);
+    console.log(`[executeCpp] Written source file to ${sourceFile}. Total chars: ${code.length}`);
+    console.log(`[executeCpp] Exact main.cpp source:\n${code}\n[executeCpp] --- End of main.cpp ---`);
 
-  if (compile.code !== 0) {
+    console.log("[executeCpp] Starting g++ compile");
+    const compile = await runCommand('g++', ['-std=c++17', '-O2', sourceFile, '-o', binaryFile], {
+      cwd: workDir,
+      timeoutMs: COMPILE_TIMEOUT_MS,
+    });
+
+    console.log("[executeCpp] Compile completed");
+    console.log(JSON.stringify(compile, null, 2));
+
+    if (compile.code !== 0) {
+      return {
+        statusId: 6,
+        statusDesc: 'Compilation Error',
+        stdout: '',
+        stderr: (compile.stderr || 'Compilation failed').trim(),
+        time: 0,
+      };
+    }
+
+    const run = await runCommand(binaryFile, [], { cwd: workDir, stdin, timeoutMs: RUN_TIMEOUT_MS });
+    if (run.timedOut) {
+      return { statusId: 5, statusDesc: 'Time Limit Exceeded', stdout: run.stdout.trim(), stderr: '', time: run.timeSeconds };
+    }
+    return {
+      statusId: run.code === 0 ? 3 : 11,
+      statusDesc: run.code === 0 ? 'Accepted' : 'Runtime Error',
+      stdout: run.stdout.trim(),
+      stderr: run.stderr.trim(),
+      time: run.timeSeconds,
+    };
+  } catch (err) {
+    console.error(
+      "[executeCpp] FATAL ERROR",
+      err,
+      err.stack
+    );
     return {
       statusId: 6,
-      statusDesc: 'Compilation Error',
-      stdout: '',
-      stderr: (compile.stderr || 'Compilation failed').trim(),
-      time: 0,
+      statusDesc: "Compilation Error",
+      stderr: String(err)
     };
   }
-
-  const run = await runCommand(binaryFile, [], { cwd: workDir, stdin, timeoutMs: RUN_TIMEOUT_MS });
-  if (run.timedOut) {
-    return { statusId: 5, statusDesc: 'Time Limit Exceeded', stdout: run.stdout.trim(), stderr: '', time: run.timeSeconds };
-  }
-  return {
-    statusId: run.code === 0 ? 3 : 11,
-    statusDesc: run.code === 0 ? 'Accepted' : 'Runtime Error',
-    stdout: run.stdout.trim(),
-    stderr: run.stderr.trim(),
-    time: run.timeSeconds,
-  };
 };
 
 const executeJava = async (workDir, code, stdin) => {

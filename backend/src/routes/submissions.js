@@ -114,7 +114,10 @@ router.post('/run', auth, async (req, res) => {
       spaceComplexityMatch: !!(optimalSpaceComplexity && spaceComplexityEstimate === optimalSpaceComplexity),
     };
 
-    console.log(`[Run Path Response] Payload:\n${JSON.stringify(payload, null, 2)}`);
+    console.log(
+      "[Run Path] Final response:",
+      JSON.stringify(payload, null, 2)
+    );
     res.json(payload);
   } catch (err) {
     res.status(500).json({ error: err.message });
