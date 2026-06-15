@@ -44,7 +44,7 @@ router.post('/', auth, async (req, res) => {
       submissionId: submission.id,
       code,
       language,
-      problemSlug,
+      problemSlug: problem.slug,
       judgeConfig: problem.judgeConfig,
       testCases: problem.testCases,
       scalingInputs: problem.scalingInputs,
@@ -70,10 +70,14 @@ router.post('/run', auth, async (req, res) => {
     const problem = await prisma.problem.findUnique({ where: { slug: problemSlug } });
     if (!problem) return res.status(404).json({ error: 'Problem not found' });
 
-    const executableCode = buildExecutableCode({ slug: problemSlug, judgeConfig: problem.judgeConfig }, language, code);
+    const executableCode = buildExecutableCode({ slug: problem.slug, judgeConfig: problem.judgeConfig }, language, code);
+
+    console.log(`[Run Path] problemSlug: ${problem.slug}, language: ${language}`);
+    console.log(`[Run Path] First 500 chars of executableCode:\n${executableCode.substring(0, 500)}\n----------------------------------------`);
+
     const judgeResult = await executeCode(executableCode, language, input || '');
-    const spaceComplexityEstimate = estimateSpaceComplexity(problemSlug, language, code);
-    const optimalSpaceComplexity = getOptimalSpaceComplexity(problemSlug);
+    const spaceComplexityEstimate = estimateSpaceComplexity(problem.slug, language, code);
+    const optimalSpaceComplexity = getOptimalSpaceComplexity(problem.slug);
     const statusId = judgeResult.statusId;
     const actualOutput = (judgeResult.stdout || '').trim();
 
@@ -88,7 +92,7 @@ router.post('/run', auth, async (req, res) => {
       verdict = 'RUNTIME_ERROR';
     } else if (typeof expectedOutput === 'string') {
       const expected = expectedOutput.trim();
-      verdict = compareOutput({ slug: problemSlug, judgeConfig: problem.judgeConfig }, actualOutput, expected) ? 'ACCEPTED' : 'WRONG_ANSWER';
+      verdict = compareOutput({ slug: problem.slug, judgeConfig: problem.judgeConfig }, actualOutput, expected) ? 'ACCEPTED' : 'WRONG_ANSWER';
       totalCases = 1;
       passedCases = verdict === 'ACCEPTED' ? 1 : 0;
       score = verdict === 'ACCEPTED' ? 100 : 0;

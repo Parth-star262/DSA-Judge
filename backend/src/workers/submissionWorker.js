@@ -89,6 +89,8 @@ const startWorker = async () => {
     const executableCode = buildExecutableCode({ slug: problemSlug, judgeConfig }, language, code);
 
     console.log(`[Worker] Processing submission ${submissionId}`);
+    console.log(`[Worker Path] problemSlug: ${problemSlug}, language: ${language}`);
+    console.log(`[Worker Path] First 500 chars of executableCode:\n${executableCode.substring(0, 500)}\n----------------------------------------`);
 
     let passedCases = 0;
     let totalTime = 0;

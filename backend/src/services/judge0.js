@@ -74,6 +74,9 @@ const executeCpp = async (workDir, code, stdin) => {
   const binaryFile = path.join(workDir, process.platform === 'win32' ? 'main.exe' : 'main');
   await fs.writeFile(sourceFile, code, 'utf8');
 
+  console.log(`[executeCpp] Written source file to ${sourceFile}. Total chars: ${code.length}`);
+  console.log(`[executeCpp] Exact main.cpp source:\n${code}\n[executeCpp] --- End of main.cpp ---`);
+
   const compile = await runCommand('g++', ['-std=c++17', '-O2', sourceFile, '-o', binaryFile], {
     cwd: workDir,
     timeoutMs: COMPILE_TIMEOUT_MS,
