@@ -93,6 +93,12 @@ const startWorker = async () => {
         userId,
       } = job.data;
 
+      await prisma.submission.update({
+        where: { id: submissionId },
+        data: { verdict: 'RUNNING' },
+      });
+      console.log(`[Worker] DB Updated: submission=${submissionId} verdict=RUNNING`);
+
       const executableCode = buildExecutableCode({ slug: problemSlug, judgeConfig }, language, code);
 
       console.log(`[Worker] Processing submission ${submissionId}`);

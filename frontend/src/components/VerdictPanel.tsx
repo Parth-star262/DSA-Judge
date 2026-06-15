@@ -30,6 +30,7 @@ const VERDICT_CONFIG: Record<string, { icon: React.ReactNode; label: string; col
   TLE: { icon: <Clock size={22} />, label: 'Time Limit Exceeded', color: '#f97316', bg: 'rgba(249,115,22,0.1)' },
   RUNTIME_ERROR: { icon: <AlertTriangle size={22} />, label: 'Runtime Error', color: '#a855f7', bg: 'rgba(168,85,247,0.1)' },
   PENDING: { icon: <Clock size={22} />, label: 'Pending...', color: '#8888aa', bg: 'rgba(136,136,170,0.1)' },
+  RUNNING: { icon: <Clock size={22} />, label: 'Running...', color: '#60a5fa', bg: 'rgba(59,130,246,0.1)' },
 };
 
 export default function VerdictPanel({ result, loading }: VerdictPanelProps) {
@@ -42,7 +43,7 @@ export default function VerdictPanel({ result, loading }: VerdictPanelProps) {
 
   if (!result) return null;
 
-  if (result.verdict === 'PENDING') {
+  if (result.verdict === 'PENDING' || result.verdict === 'RUNNING') {
     return (
       <div style={{
         background: 'rgba(136,136,170,0.08)',
@@ -52,10 +53,14 @@ export default function VerdictPanel({ result, loading }: VerdictPanelProps) {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#a3a3c2' }}>
           <Clock size={22} />
-          <span style={{ fontWeight: 700, fontSize: 18 }}>Submission queued</span>
+          <span style={{ fontWeight: 700, fontSize: 18 }}>
+            {result.verdict === 'RUNNING' ? 'Submission running' : 'Submission queued'}
+          </span>
         </div>
         <div style={{ marginTop: 10, color: 'var(--text-muted)', fontSize: 13, lineHeight: 1.6 }}>
-          The worker is judging your submission. This panel will update automatically when results are ready.
+          {result.verdict === 'RUNNING'
+            ? 'The worker picked up the job and is judging the test cases.'
+            : 'The submission is waiting for a worker. This panel will update automatically.'}
         </div>
         <div style={{ marginTop: 12, background: 'rgba(0,0,0,0.25)', borderRadius: 999, height: 6, overflow: 'hidden' }}>
           <div style={{ width: '70%', height: '100%', borderRadius: 999, background: 'linear-gradient(90deg, rgba(136,136,170,0.2), rgba(136,136,170,0.8))', animation: 'pendingPulse 1.4s ease-in-out infinite' }} />

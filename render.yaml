@@ -18,7 +18,7 @@ services:
   - type: worker
     name: dsa-judge-worker
     env: node
-    plan: free
+    plan: starter
     branch: main
     repo: https://github.com/Parth-star262/DSA-Judge
     rootDir: backend

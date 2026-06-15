@@ -137,6 +137,7 @@ model Submission {
 
 enum Verdict {
   PENDING
+  RUNNING
   ACCEPTED
   PARTIAL
   WRONG_ANSWER

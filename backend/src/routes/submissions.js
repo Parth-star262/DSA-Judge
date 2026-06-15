@@ -25,6 +25,8 @@ console.log(`[Queue] Initialized "${SUBMISSION_QUEUE_NAME}"`, describeQueueConne
 router.post('/', auth, async (req, res) => {
   try {
     const { problemSlug, code, language } = req.body;
+    console.log(`[Submit] Request Received: user=${req.user.id} problem=${problemSlug} language=${language}`);
+
     if (!problemSlug || !code || !language)
       return res.status(400).json({ error: 'problemSlug, code, language required' });
 
@@ -156,6 +158,8 @@ router.get('/user/history', auth, async (req, res) => {
 // GET /api/submissions/:id — poll result
 router.get('/:id', auth, async (req, res) => {
   try {
+    console.log(`[Polling] Request: submission=${req.params.id} user=${req.user.id}`);
+
     const submission = await prisma.submission.findUnique({
       where: { id: req.params.id },
     });

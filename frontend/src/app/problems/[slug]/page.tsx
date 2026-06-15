@@ -129,6 +129,8 @@ interface SubmissionResult {
 
 const POLL_INTERVAL_MS = 1500;
 const POLL_ATTEMPTS = 120;
+const PENDING_VERDICTS = new Set(['PENDING', 'RUNNING']);
+const DIVIDER_STORAGE_KEY = 'dsa-judge-problem-left-width';
 
 export default function ProblemPage() {
   const params = useParams();
@@ -159,6 +161,13 @@ export default function ProblemPage() {
   const [leftWidth, setLeftWidth] = useState(42);
   const [isHoveringDivider, setIsHoveringDivider] = useState(false);
   const [isDraggingWidth, setIsDraggingWidth] = useState(false);
+
+  useEffect(() => {
+    const savedWidth = Number(window.localStorage.getItem(DIVIDER_STORAGE_KEY));
+    if (Number.isFinite(savedWidth) && savedWidth >= 25 && savedWidth <= 75) {
+      setLeftWidth(savedWidth);
+    }
+  }, []);
 
   const startResize = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -204,6 +213,8 @@ export default function ProblemPage() {
 
     const handleMouseUp = () => {
       setIsDraggingWidth(false);
+      window.localStorage.setItem(DIVIDER_STORAGE_KEY, String(leftWidth));
+      window.dispatchEvent(new Event('resize'));
     };
 
     window.addEventListener('mousemove', handleMouseMove);
@@ -212,7 +223,7 @@ export default function ProblemPage() {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDraggingWidth]);
+  }, [isDraggingWidth, leftWidth]);
 
   useEffect(() => {
     api.get(`/problems/${slug}`)
@@ -253,7 +264,7 @@ export default function ProblemPage() {
       await new Promise(r => setTimeout(r, POLL_INTERVAL_MS));
       try {
         const res = await api.get(`/submissions/${submissionId}`);
-        if (res.data.verdict !== 'PENDING') return res.data;
+        if (!PENDING_VERDICTS.has(res.data.verdict)) return res.data;
       } catch (error) {
         if (i === POLL_ATTEMPTS - 1) throw error;
       }
@@ -838,7 +849,11 @@ export default function ProblemPage() {
       <div
         className="problem-layout-divider"
         onMouseDown={startWidthResize}
-        onDoubleClick={() => setLeftWidth(42)}
+        onDoubleClick={() => {
+          setLeftWidth(42);
+          window.localStorage.setItem(DIVIDER_STORAGE_KEY, '42');
+          window.dispatchEvent(new Event('resize'));
+        }}
         onMouseEnter={() => setIsHoveringDivider(true)}
         onMouseLeave={() => setIsHoveringDivider(false)}
         role="separator"
