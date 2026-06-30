@@ -14,23 +14,6 @@ redis.on('end', () => {
   console.error('Redis connection closed after retry attempts. Cache and queue features are unavailable.');
 });
 
-const ensureRedisConnection = async () => {
-  await redis.ping();
-};
-
-const setResult = async (submissionId, data, ttlSeconds = 3600) => {
-  await redis.set(`result:${submissionId}`, JSON.stringify(data), 'EX', ttlSeconds);
-};
-
-const getResult = async (submissionId) => {
-  try {
-    const data = await redis.get(`result:${submissionId}`);
-    return data ? JSON.parse(data) : null;
-  } catch {
-    return null;
-  }
-};
-
 const setProblemCache = async (slug, data, ttlSeconds = 600) => {
   try {
     await redis.set(`problem:${slug}`, JSON.stringify(data), 'EX', ttlSeconds);
@@ -67,9 +50,6 @@ const getTestCaseCache = async (problemId) => {
 
 module.exports = {
   redis,
-  ensureRedisConnection,
-  setResult,
-  getResult,
   setProblemCache,
   getProblemCache,
   setTestCaseCache,

@@ -438,4 +438,95 @@ router.get('/analytics/dashboard', auth, async (req, res) => {
   }
 });
 
+// GET /api/users/:userId/activity — daily solve heatmap (Phase 4.1)
+router.get('/users/:userId/activity', async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({ where: { id: req.params.userId }, select: { id: true } });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
+    const submissions = await prisma.submission.findMany({
+      where: {
+        userId: req.params.userId,
+        submittedAt: { gte: oneYearAgo },
+        verdict: 'ACCEPTED',
+      },
+      select: { submittedAt: true, problemId: true },
+    });
+
+    // Dedupe by (date, problemId) — only count unique solves per day
+    const seen = new Set();
+    const dailyCounts = {};
+
+    for (const sub of submissions) {
+      const dateStr = sub.submittedAt.toISOString().slice(0, 10); // YYYY-MM-DD
+      const key = `${dateStr}:${sub.problemId}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        dailyCounts[dateStr] = (dailyCounts[dateStr] || 0) + 1;
+      }
+    }
+
+    const activity = Object.entries(dailyCounts).map(([date, count]) => ({ date, count }));
+    res.json(activity);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/users/:userId/topic-stats — radar chart data (Phase 4.3)
+router.get('/users/:userId/topic-stats', async (req, res) => {
+  try {
+    const user = await prisma.user.findUnique({ where: { id: req.params.userId }, select: { id: true } });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const topics = await prisma.topic.findMany({
+      orderBy: { order: 'asc' },
+      include: {
+        problems: {
+          select: { id: true, difficulty: true },
+        },
+      },
+    });
+
+    const solvedProgress = await prisma.userProgress.findMany({
+      where: { userId: req.params.userId, status: 'SOLVED' },
+      select: { problemId: true },
+    });
+    const solvedSet = new Set(solvedProgress.map((p) => p.problemId));
+
+    const stats = topics.map((topic) => {
+      const total = topic.problems.length;
+      if (total === 0) return { topic: topic.name, slug: topic.slug, score: 0, solved: 0, total: 0 };
+
+      let weightedSolved = 0;
+      let weightedTotal = 0;
+
+      for (const problem of topic.problems) {
+        const weight = problem.difficulty === 'HARD' ? 3 : problem.difficulty === 'MEDIUM' ? 2 : 1;
+        weightedTotal += weight;
+        if (solvedSet.has(problem.id)) weightedSolved += weight;
+      }
+
+      const solved = topic.problems.filter((p) => solvedSet.has(p.id)).length;
+      const score = weightedTotal > 0 ? Math.round((weightedSolved / weightedTotal) * 100) : 0;
+
+      return { topic: topic.name, slug: topic.slug, score, solved, total };
+    });
+
+    res.json(stats);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/badges/meta — badge type → display info map
+router.get('/badges/meta', (req, res) => {
+  const { BADGE_META } = require('../services/badgeService');
+  res.json(BADGE_META);
+});
+
 module.exports = router;
+

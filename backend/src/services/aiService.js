@@ -224,4 +224,5 @@ Explain why this test case fails.`;
   return callAI(DEBUG_SYSTEM, userPrompt, cacheKey);
 };
 
-module.exports = { getAIHint, getAICodeReview, getAIDebugHelp };
+module.exports = { getAIHint, getAICodeReview, getAIDebugHelp, callAI };
+

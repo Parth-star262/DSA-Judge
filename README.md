@@ -4,7 +4,7 @@ Full-stack coding judge platform with topic-wise DSA problems, Monaco editor, as
 
 ## Project Layout
 
-- `backend` - Express API, Prisma, BullMQ worker, Redis caching
+- `backend` - Express API, Prisma, synchronous judge service, Redis caching
 - `frontend` - Next.js app (App Router) with Monaco editor integration
 
 ## Prerequisites
@@ -68,5 +68,5 @@ npm run dev
 1. Register a user and login
 2. Open a problem page
 3. Run code with sample input
-4. Submit code and verify verdict polling
+4. Submit code and verify the final verdict response
 5. Enroll and validate locked hints/editorial access

@@ -10,20 +10,21 @@ datasource db {
 }
 
 model User {
-  id           String       @id @default(uuid())
-  name         String
-  email        String       @unique
-  passwordHash String
-  role         Role         @default(FREE)
-  createdAt    DateTime     @default(now())
-  submissions  Submission[]
-  progress     UserProgress[]
-  streak       Streak?
-  bookmarks    Bookmark[]
-  collections  Collection[]
-  comments     Comment[]
-  ratings      Rating[]
-  badges       Badge[]
+  id                String             @id @default(uuid())
+  name              String
+  email             String             @unique
+  passwordHash      String
+  role              Role               @default(FREE)
+  createdAt         DateTime           @default(now())
+  submissions       Submission[]
+  progress          UserProgress[]
+  streak            Streak?
+  bookmarks         Bookmark[]
+  collections       Collection[]
+  comments          Comment[]
+  ratings           Rating[]
+  badges            Badge[]
+  interviewSessions InterviewSession[]
 }
 
 enum Role {
@@ -41,33 +42,34 @@ model Topic {
 }
 
 model Problem {
-  id               String        @id @default(uuid())
-  slug             String        @unique
-  title            String
-  difficulty       Difficulty
-  description      String
-  constraints      String
-  inputFormat      String
-  outputFormat     String
-  optimalComplexity String       @default("O(N)")
-  targetedTimeComplexity String?
+  id                      String           @id @default(uuid())
+  slug                    String           @unique
+  title                   String
+  difficulty              Difficulty
+  description             String
+  constraints             String
+  inputFormat             String
+  outputFormat            String
+  optimalComplexity       String           @default("O(N)")
+  targetedTimeComplexity  String?
   targetedSpaceComplexity String?
-  isPremium        Boolean       @default(false)  
-  judgeConfig      Json?
-  topicId          String
-  topic            Topic         @relation(fields: [topicId], references: [id])
-  testCases        TestCase[]
-  hints            Hint[]
-  editorial        Editorial?
-  companyTags      CompanyTag[]
-  submissions      Submission[]
-  progress         UserProgress[]
-  scalingInputs    ScalingInput[]
-  bookmarks        Bookmark[]
-  collections      Collection[] @relation("CollectionProblems")
-  comments         Comment[]
-  ratings          Rating[]
-  createdAt        DateTime      @default(now())
+  isPremium               Boolean          @default(false)
+  judgeConfig             Json?
+  topicId                 String
+  topic                   Topic            @relation(fields: [topicId], references: [id])
+  testCases               TestCase[]
+  hints                   Hint[]
+  editorial               Editorial?
+  companyTags             CompanyTag[]
+  submissions             Submission[]
+  progress                UserProgress[]
+  scalingInputs           ScalingInput[]
+  bookmarks               Bookmark[]
+  collections             Collection[]     @relation("CollectionProblems")
+  comments                Comment[]
+  ratings                 Rating[]
+  contestProblems         ContestProblem[]
+  createdAt               DateTime         @default(now())
 }
 
 enum Difficulty {
@@ -99,7 +101,7 @@ model Hint {
   id        String  @id @default(uuid())
   problemId String
   problem   Problem @relation(fields: [problemId], references: [id])
-  level     Int     // 1, 2, or 3
+  level     Int // 1, 2, or 3
   content   String
 }
 
@@ -107,7 +109,7 @@ model Editorial {
   id        String  @id @default(uuid())
   problemId String  @unique
   problem   Problem @relation(fields: [problemId], references: [id])
-  content   String  // Markdown
+  content   String // Markdown
   videoUrl  String?
 }
 
@@ -119,25 +121,29 @@ model CompanyTag {
 }
 
 model Submission {
-  id                String    @id @default(uuid())
-  userId            String
-  user              User      @relation(fields: [userId], references: [id])
-  problemId         String
-  problem           Problem   @relation(fields: [problemId], references: [id])
-  code              String
-  language          String
-  verdict           Verdict   @default(PENDING)
-  score             Int       @default(0)
-  totalCases        Int       @default(0)
-  passedCases       Int       @default(0)
-  executionTime     Float?
+  id                 String              @id @default(uuid())
+  userId             String
+  user               User                @relation(fields: [userId], references: [id])
+  problemId          String
+  problem            Problem             @relation(fields: [problemId], references: [id])
+  code               String
+  language           String
+  verdict            Verdict             @default(PENDING)
+  score              Int                 @default(0)
+  totalCases         Int                 @default(0)
+  passedCases        Int                 @default(0)
+  executionTime      Float?
   complexityEstimate String?
-  submittedAt       DateTime  @default(now())
+  submittedAt        DateTime            @default(now())
+  contestSubmissions ContestSubmission[]
+
+  @@index([userId, verdict])
+  @@index([userId, submittedAt])
+  @@index([problemId, verdict])
 }
 
 enum Verdict {
   PENDING
-  RUNNING
   ACCEPTED
   PARTIAL
   WRONG_ANSWER
@@ -154,6 +160,8 @@ model UserProgress {
   status    ProgressStatus @default(ATTEMPTED)
 
   @@unique([userId, problemId])
+  @@index([userId])
+  @@index([userId, status])
 }
 
 enum ProgressStatus {
@@ -163,25 +171,26 @@ enum ProgressStatus {
 }
 
 model Streak {
-  id              String    @id @default(uuid())
-  userId          String    @unique
-  user            User      @relation(fields: [userId], references: [id])
-  currentStreak   Int       @default(0)
-  longestStreak   Int       @default(0)
-  lastSolvedAt    DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id            String    @id @default(uuid())
+  userId        String    @unique
+  user          User      @relation(fields: [userId], references: [id])
+  currentStreak Int       @default(0)
+  longestStreak Int       @default(0)
+  lastSolvedAt  DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 }
 
 model Bookmark {
-  id          String    @id @default(uuid())
-  userId      String
-  user        User      @relation(fields: [userId], references: [id])
-  problemId   String
-  problem     Problem   @relation(fields: [problemId], references: [id])
-  createdAt   DateTime  @default(now())
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  problemId String
+  problem   Problem  @relation(fields: [problemId], references: [id])
+  createdAt DateTime @default(now())
 
   @@unique([userId, problemId])
+  @@index([userId])
 }
 
 model Collection {
@@ -196,35 +205,92 @@ model Collection {
 }
 
 model Comment {
-  id          String    @id @default(uuid())
+  id          String   @id @default(uuid())
   problemId   String
-  problem     Problem   @relation(fields: [problemId], references: [id])
+  problem     Problem  @relation(fields: [problemId], references: [id])
   userId      String
-  user        User      @relation(fields: [userId], references: [id])
+  user        User     @relation(fields: [userId], references: [id])
   content     String
-  upvotes     Int       @default(0)
+  upvotes     Int      @default(0)
   language    String?
-  submittedAt DateTime  @default(now())
+  submittedAt DateTime @default(now())
 }
 
 model Rating {
-  id          String    @id @default(uuid())
+  id          String   @id @default(uuid())
   problemId   String
-  problem     Problem   @relation(fields: [problemId], references: [id])
+  problem     Problem  @relation(fields: [problemId], references: [id])
   userId      String
-  user        User      @relation(fields: [userId], references: [id])
+  user        User     @relation(fields: [userId], references: [id])
   stars       Int
   review      String?
-  submittedAt DateTime  @default(now())
+  submittedAt DateTime @default(now())
 
   @@unique([userId, problemId])
 }
 
 model Badge {
-  id          String    @id @default(uuid())
-  userId      String
-  user        User      @relation(fields: [userId], references: [id])
-  badgeType   String
-  problemId   String?
-  awardedAt   DateTime  @default(now())
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  badgeType String
+  problemId String?
+  awardedAt DateTime @default(now())
+
+  @@index([userId])
+  @@unique([userId, badgeType])
+}
+
+// ── Phase 3: AI Interview Sessions ────────────────────────────────────────────
+model InterviewSession {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  problemId String?
+  messages  Json // Array of {role, content} objects
+  score     Int?
+  feedback  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// ── Phase 4: Contests ─────────────────────────────────────────────────────────
+model Contest {
+  id          String              @id @default(uuid())
+  title       String
+  slug        String              @unique
+  description String?
+  startAt     DateTime
+  endAt       DateTime
+  problems    ContestProblem[]
+  submissions ContestSubmission[]
+  createdAt   DateTime            @default(now())
+}
+
+model ContestProblem {
+  id        String  @id @default(uuid())
+  contestId String
+  contest   Contest @relation(fields: [contestId], references: [id])
+  problemId String
+  problem   Problem @relation(fields: [problemId], references: [id])
+  order     Int     @default(0)
+  points    Int     @default(100)
+
+  @@unique([contestId, problemId])
+}
+
+model ContestSubmission {
+  id           String     @id @default(uuid())
+  contestId    String
+  contest      Contest    @relation(fields: [contestId], references: [id])
+  submissionId String
+  submission   Submission @relation(fields: [submissionId], references: [id])
+  userId       String
+  problemId    String
+  timeTaken    Int // seconds since contest start
+  submittedAt  DateTime   @default(now())
+
+  @@index([contestId, userId])
 }

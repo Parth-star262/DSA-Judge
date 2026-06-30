@@ -127,9 +127,6 @@ interface SubmissionResult {
   };
 }
 
-const POLL_INTERVAL_MS = 1500;
-const POLL_ATTEMPTS = 120;
-const PENDING_VERDICTS = new Set(['PENDING', 'RUNNING']);
 const DIVIDER_STORAGE_KEY = 'dsa-judge-problem-left-width';
 
 export default function ProblemPage() {
@@ -150,7 +147,6 @@ export default function ProblemPage() {
   const [submitResult, setSubmitResult] = useState<SubmissionResult | null>(null);
   const [runLoading, setRunLoading] = useState(false);
   const [submitLoading, setSubmitLoading] = useState(false);
-  const [submissionTracking, setSubmissionTracking] = useState(false);
   const [activeTestCase, setActiveTestCase] = useState(0);
   const [customInput, setCustomInput] = useState('');
   const [customExpectedOutput, setCustomExpectedOutput] = useState('');
@@ -259,19 +255,6 @@ export default function ProblemPage() {
     }
   }, [runResult, submitResult]);
 
-  const pollResult = useCallback(async (submissionId: string): Promise<SubmissionResult | null> => {
-    for (let i = 0; i < POLL_ATTEMPTS; i++) {
-      await new Promise(r => setTimeout(r, POLL_INTERVAL_MS));
-      try {
-        const res = await api.get(`/submissions/${submissionId}`);
-        if (!PENDING_VERDICTS.has(res.data.verdict)) return res.data;
-      } catch (error) {
-        if (i === POLL_ATTEMPTS - 1) throw error;
-      }
-    }
-    return null;
-  }, []);
-
   const handleRun = async () => {
     if (!user) { alert('Please login to run code'); return; }
     const starterForCurrent = getStarter(slug, language);
@@ -315,42 +298,8 @@ export default function ProblemPage() {
     setSubmitLoading(true); setSubmitResult(null);
     try {
       const res = await api.post('/submissions', { problemSlug: slug, code, language });
-      setSubmitResult({
-        verdict: 'PENDING',
-        score: 0,
-        passedCases: 0,
-        totalCases: problem?.testCases?.length || 0,
-      });
+      setSubmitResult(res.data);
       setRunResult(null);
-
-      setSubmissionTracking(true);
-      void pollResult(res.data.submissionId)
-        .then((result) => {
-          if (result) {
-            setSubmitResult(result);
-          } else {
-            setSubmitResult({
-              verdict: 'RUNTIME_ERROR',
-              score: 0,
-              passedCases: 0,
-              totalCases: problem?.testCases?.length || 0,
-              stderr: 'Judging timed out. Check that the submission worker is running and connected to the same Redis instance.',
-            });
-          }
-        })
-        .catch((error: unknown) => {
-          const message = axios.isAxiosError(error)
-            ? error.response?.data?.error || error.message
-            : 'Unable to retrieve the submission result.';
-          setSubmitResult({
-            verdict: 'RUNTIME_ERROR',
-            score: 0,
-            passedCases: 0,
-            totalCases: problem?.testCases?.length || 0,
-            stderr: `Polling failed: ${message}`,
-          });
-        })
-        .finally(() => setSubmissionTracking(false));
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
         setSubmitResult({ verdict: 'RUNTIME_ERROR', score: 0, passedCases: 0, totalCases: 0, stderr: error.response?.data?.error || error.message });
@@ -715,8 +664,8 @@ export default function ProblemPage() {
             <button onClick={handleRun} disabled={runLoading || submitLoading} style={{ background: 'rgba(34,197,94,0.1)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.4)', borderRadius: 8, padding: '6px 18px', fontWeight: 700, cursor: runLoading ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontFamily: 'inherit', opacity: submitLoading ? 0.5 : 1 }}>
               <Play size={14} /> {runLoading ? 'Running...' : 'Run'}
             </button>
-            <button onClick={handleSubmit} disabled={runLoading || submitLoading || submissionTracking} style={{ background: '#6c63ff', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 18px', fontWeight: 700, cursor: (submitLoading || submissionTracking) ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontFamily: 'inherit', opacity: runLoading ? 0.5 : 1 }}>
-              <Send size={14} /> {submitLoading ? 'Submitting...' : submissionTracking ? 'Queued' : 'Submit'}
+            <button onClick={handleSubmit} disabled={runLoading || submitLoading} style={{ background: '#6c63ff', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 18px', fontWeight: 700, cursor: submitLoading ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontFamily: 'inherit', opacity: runLoading ? 0.5 : 1 }}>
+              <Send size={14} /> {submitLoading ? 'Judging...' : 'Submit'}
             </button>
           </div>
         </div>

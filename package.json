@@ -5,9 +5,8 @@
   "scripts": {
     "setup": "npm --prefix backend install && npm --prefix frontend install",
     "dev:backend": "npm --prefix backend run dev",
-    "dev:worker": "npm --prefix backend run worker",
     "dev:frontend": "npm --prefix frontend run dev",
-    "dev": "concurrently --kill-others-on-fail -n api,worker,web -c cyan,yellow,magenta \"npm run dev:backend\" \"npm run dev:worker\" \"npm run dev:frontend\"",
+    "dev": "concurrently --kill-others-on-fail -n api,web -c cyan,magenta \"npm run dev:backend\" \"npm run dev:frontend\"",
     "lint": "npm --prefix frontend run lint",
     "typecheck": "npm --prefix frontend run typecheck",
     "db:generate": "npm --prefix backend run prisma:generate",
@@ -16,5 +15,8 @@
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
+  },
+  "dependencies": {
+    "docx": "^9.7.1"
   }
 }

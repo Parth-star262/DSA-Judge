@@ -1,43 +1,33 @@
 const express = require('express');
-const { Queue } = require('bullmq');
 const prisma = require('../services/prisma');
-const { getResult } = require('../services/redis');
 const { auth } = require('../middleware/auth');
 const { executeCode } = require('../services/judge0');
-const {
-  SUBMISSION_QUEUE_NAME,
-  buildQueueConnection,
-  describeQueueConnection,
-} = require('../services/queueConnection');
 const { buildExecutableCode, compareOutput } = require('../services/codeHarness');
 const { estimateSpaceComplexity, getOptimalSpaceComplexity } = require('../services/spaceComplexity');
+const { judgeSubmission } = require('../services/submissionJudge');
+const { getQueue, getQueueEvents } = require('../workers/judgeWorker');
+const { submissionLimiter } = require('../middleware/security');
 
 const router = express.Router();
 
-const submissionQueue = new Queue(SUBMISSION_QUEUE_NAME, {
-  connection: buildQueueConnection(),
-});
-
-submissionQueue.on('error', (error) => console.error('[Queue] Error', error));
-console.log(`[Queue] Initialized "${SUBMISSION_QUEUE_NAME}"`, describeQueueConnection());
-
-// POST /api/submissions — submit code
-router.post('/', auth, async (req, res) => {
+// POST /api/submissions — enqueue submission (async judging)
+router.post('/', auth, submissionLimiter, async (req, res) => {
+  let submission = null;
   try {
     const { problemSlug, code, language } = req.body;
-    console.log(`[Submit] Request Received: user=${req.user.id} problem=${problemSlug} language=${language}`);
+    req.log.info({ problemSlug, language, userId: req.user.id }, '[Submit] Request received');
 
     if (!problemSlug || !code || !language)
       return res.status(400).json({ error: 'problemSlug, code, language required' });
 
     const problem = await prisma.problem.findUnique({
       where: { slug: problemSlug },
-      include: { testCases: true, scalingInputs: true },
+      select: { id: true, slug: true, testCases: { select: { id: true } } },
     });
     if (!problem) return res.status(404).json({ error: 'Problem not found' });
 
     // Create submission in DB (PENDING)
-    const submission = await prisma.submission.create({
+    submission = await prisma.submission.create({
       data: {
         userId: req.user.id,
         problemId: problem.id,
@@ -48,35 +38,113 @@ router.post('/', auth, async (req, res) => {
       },
     });
 
-    // Enqueue job
-    const job = await submissionQueue.add('judge', {
-      submissionId: submission.id,
-      code,
-      language,
-      problemSlug: problem.slug,
-      judgeConfig: problem.judgeConfig,
-      testCases: problem.testCases,
-      scalingInputs: problem.scalingInputs,
-      optimalComplexity: problem.optimalComplexity,
-      problemId: problem.id,
-      userId: req.user.id,
-    }, {
-      attempts: 2,
-      backoff: { type: 'exponential', delay: 2000 },
-      removeOnComplete: 100,
-      removeOnFail: 500,
-    });
+    // Enqueue job for async judging
+    const queue = getQueue();
+    await queue.add(
+      'judge',
+      {
+        submissionId: submission.id,
+        userId: req.user.id,
+        problemSlug,
+        code,
+        language,
+      },
+      { jobId: submission.id } // Use submissionId as jobId for easy SSE lookup
+    );
 
-    console.log(`[Submit] Job Added: job=${job.id} submission=${submission.id} queue=${SUBMISSION_QUEUE_NAME}`);
-
-    res.status(202).json({ submissionId: submission.id, jobId: job.id, status: 'PENDING' });
+    req.log.info({ submissionId: submission.id }, '[Submit] Enqueued for judging');
+    res.status(202).json({ submissionId: submission.id, verdict: 'PENDING' });
   } catch (err) {
+    if (submission) {
+      await prisma.submission.update({
+        where: { id: submission.id },
+        data: { verdict: 'RUNTIME_ERROR' },
+      }).catch(() => {});
+    }
+    req.log.error({ err: err.message }, '[Submit] Failed to enqueue');
     res.status(500).json({ error: err.message });
   }
 });
 
-// POST /api/submissions/run — run against a single sample/custom input
-router.post('/run', auth, async (req, res) => {
+// GET /api/submissions/:id/stream — SSE: streams live verdict updates
+router.get('/:id/stream', auth, async (req, res) => {
+  const submissionId = req.params.id;
+
+  // Verify submission belongs to user
+  const submission = await prisma.submission.findUnique({ where: { id: submissionId } });
+  if (!submission) return res.status(404).json({ error: 'Submission not found' });
+  if (submission.userId !== req.user.id && req.user.role !== 'ADMIN') {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
+  // If already done, return immediately
+  if (submission.verdict !== 'PENDING') {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.write(`data: ${JSON.stringify({ type: 'complete', submission })}\n\n`);
+    return res.end();
+  }
+
+  // Set up SSE
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no'); // Disable nginx buffering
+
+  const send = (data) => {
+    if (!res.writableEnded) {
+      res.write(`data: ${JSON.stringify(data)}\n\n`);
+    }
+  };
+
+  // Heartbeat every 5s to keep connection alive
+  const heartbeat = setInterval(() => send({ type: 'heartbeat' }), 5000);
+
+  const queueEvents = getQueueEvents();
+
+  const onCompleted = async ({ jobId, returnvalue }) => {
+    if (jobId !== submissionId) return;
+    try {
+      const result = typeof returnvalue === 'string' ? JSON.parse(returnvalue) : returnvalue;
+      send({ type: 'complete', result });
+    } catch {
+      // Fetch from DB as fallback
+      const updated = await prisma.submission.findUnique({ where: { id: submissionId } });
+      send({ type: 'complete', result: updated });
+    }
+    cleanup();
+  };
+
+  const onFailed = ({ jobId, failedReason }) => {
+    if (jobId !== submissionId) return;
+    send({ type: 'error', error: failedReason || 'Judging failed' });
+    cleanup();
+  };
+
+  const cleanup = () => {
+    clearInterval(heartbeat);
+    queueEvents.off('completed', onCompleted);
+    queueEvents.off('failed', onFailed);
+    if (!res.writableEnded) res.end();
+  };
+
+  queueEvents.on('completed', onCompleted);
+  queueEvents.on('failed', onFailed);
+  req.on('close', cleanup);
+
+  // Send initial status
+  send({ type: 'queued', submissionId });
+
+  // Timeout after 3 minutes (safety net)
+  setTimeout(() => {
+    send({ type: 'timeout', message: 'Judging is taking too long. Please check back later.' });
+    cleanup();
+  }, 3 * 60 * 1000);
+});
+
+// POST /api/submissions/run — run against a single sample/custom input (sync, no queue)
+router.post('/run', auth, submissionLimiter, async (req, res) => {
   try {
     const { problemSlug, code, language, input, expectedOutput } = req.body;
     if (!problemSlug || !code || !language) {
@@ -88,8 +156,7 @@ router.post('/run', auth, async (req, res) => {
 
     const executableCode = buildExecutableCode({ slug: problem.slug, judgeConfig: problem.judgeConfig }, language, code);
 
-    console.log(`[Run Path] problemSlug: ${problem.slug}, language: ${language}`);
-    console.log(`[Run Path] First 500 chars of executableCode:\n${executableCode.substring(0, 500)}\n----------------------------------------`);
+    req.log.info({ problemSlug: problem.slug, language }, '[Run] Executing custom input');
 
     const judgeResult = await executeCode(executableCode, language, input || '');
     const spaceComplexityEstimate = estimateSpaceComplexity(problem.slug, language, code);
@@ -108,7 +175,9 @@ router.post('/run', auth, async (req, res) => {
       verdict = 'RUNTIME_ERROR';
     } else if (typeof expectedOutput === 'string') {
       const expected = expectedOutput.trim();
-      verdict = compareOutput({ slug: problem.slug, judgeConfig: problem.judgeConfig }, actualOutput, expected) ? 'ACCEPTED' : 'WRONG_ANSWER';
+      verdict = compareOutput({ slug: problem.slug, judgeConfig: problem.judgeConfig }, actualOutput, expected)
+        ? 'ACCEPTED'
+        : 'WRONG_ANSWER';
       totalCases = 1;
       passedCases = verdict === 'ACCEPTED' ? 1 : 0;
       score = verdict === 'ACCEPTED' ? 100 : 0;
@@ -116,7 +185,7 @@ router.post('/run', auth, async (req, res) => {
       verdict = 'COMPLETED';
     }
 
-    const payload = {
+    res.json({
       verdict,
       score,
       passedCases,
@@ -128,14 +197,9 @@ router.post('/run', auth, async (req, res) => {
       spaceComplexityEstimate,
       optimalSpaceComplexity,
       spaceComplexityMatch: !!(optimalSpaceComplexity && spaceComplexityEstimate === optimalSpaceComplexity),
-    };
-
-    console.log(
-      "[Run Path] Final response:",
-      JSON.stringify(payload, null, 2)
-    );
-    res.json(payload);
+    });
   } catch (err) {
+    req.log.error({ err: err.message }, '[Run] Failed');
     res.status(500).json({ error: err.message });
   }
 });
@@ -155,27 +219,14 @@ router.get('/user/history', auth, async (req, res) => {
   }
 });
 
-// GET /api/submissions/:id — poll result
+// GET /api/submissions/:id — poll result (fallback if SSE not used)
 router.get('/:id', auth, async (req, res) => {
   try {
-    console.log(`[Polling] Request: submission=${req.params.id} user=${req.user.id}`);
-
-    const submission = await prisma.submission.findUnique({
-      where: { id: req.params.id },
-    });
+    const submission = await prisma.submission.findUnique({ where: { id: req.params.id } });
     if (!submission) return res.status(404).json({ error: 'Submission not found' });
     if (submission.userId !== req.user.id && req.user.role !== 'ADMIN') {
       return res.status(403).json({ error: 'Forbidden' });
     }
-
-    // Check Redis first
-    const cached = await getResult(req.params.id);
-    if (cached) {
-      console.log(`[Polling] Status Returned: submission=${req.params.id} source=redis verdict=${cached.verdict}`);
-      return res.json(cached);
-    }
-
-    console.log(`[Polling] Status Returned: submission=${submission.id} source=database verdict=${submission.verdict}`);
     res.json(submission);
   } catch (err) {
     res.status(500).json({ error: err.message });

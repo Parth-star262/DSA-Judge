@@ -7,13 +7,6 @@ services:
     ports:
       - "5002:5001"
 
-  worker:
-    build:
-      context: ./backend
-    env_file:
-      - ./backend/.env
-    command: npm run worker
-
   frontend:
     build:
       context: ./frontend
