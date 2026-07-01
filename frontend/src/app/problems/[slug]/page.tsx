@@ -12,6 +12,7 @@ import VerdictPanel from '@/components/VerdictPanel';
 import AIHintButton from '@/components/AIHintButton';
 import AIReviewPanel from '@/components/AIReviewPanel';
 import AIChatPanel from '@/components/AIChatPanel';
+import NextProblemCard from '@/components/NextProblemCard';
 import { Play, Send, BookOpen, Lightbulb, Lock, ChevronLeft, Tag, GripVertical } from 'lucide-react';
 import Link from 'next/link';
 import axios from 'axios';
@@ -157,6 +158,8 @@ export default function ProblemPage() {
   const [leftWidth, setLeftWidth] = useState(42);
   const [isHoveringDivider, setIsHoveringDivider] = useState(false);
   const [isDraggingWidth, setIsDraggingWidth] = useState(false);
+  const [mobileTab, setMobileTab] = useState<'problem' | 'code' | 'result'>('problem');
+  const [showShortcuts, setShowShortcuts] = useState(false);
 
   useEffect(() => {
     const savedWidth = Number(window.localStorage.getItem(DIVIDER_STORAGE_KEY));
@@ -252,10 +255,46 @@ export default function ProblemPage() {
   useEffect(() => {
     if (runResult || submitResult) {
       setShowOutput(true);
+      setMobileTab('result');
     }
   }, [runResult, submitResult]);
 
-  const handleRun = async () => {
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const isTypingTarget = target && ['INPUT', 'TEXTAREA'].includes(target.tagName);
+
+      if (event.key === '?' && !isTypingTarget) {
+        event.preventDefault();
+        setShowShortcuts(true);
+        return;
+      }
+
+      if (!(event.ctrlKey || event.metaKey)) return;
+
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        void handleSubmit();
+        return;
+      }
+
+      if (event.key.toLowerCase() === 'r') {
+        event.preventDefault();
+        void handleRun();
+        return;
+      }
+
+      if (event.key.toLowerCase() === 'h') {
+        event.preventDefault();
+        document.dispatchEvent(new Event('dsa-judge:hint-shortcut'));
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleRun, handleSubmit]);
+
+  async function handleRun() {
     if (!user) { alert('Please login to run code'); return; }
     const starterForCurrent = getStarter(slug, language);
     if (code.trim() === starterForCurrent.trim()) {
@@ -291,9 +330,9 @@ export default function ProblemPage() {
         setRunResult({ verdict: 'RUNTIME_ERROR', score: 0, passedCases: 0, totalCases: 0, stderr: 'Run failed' });
       }
     } finally { setRunLoading(false); }
-  };
+  }
 
-  const handleSubmit = async () => {
+  async function handleSubmit() {
     if (!user) { alert('Please login to submit'); return; }
     setSubmitLoading(true); setSubmitResult(null);
     try {
@@ -307,7 +346,7 @@ export default function ProblemPage() {
         setSubmitResult({ verdict: 'RUNTIME_ERROR', score: 0, passedCases: 0, totalCases: 0, stderr: 'Submit failed' });
       }
     } finally { setSubmitLoading(false); }
-  };
+  }
 
   const handleEnroll = async () => {
     const res = await enroll();
@@ -338,8 +377,15 @@ export default function ProblemPage() {
   return (
     <div
       className="problem-layout"
+      data-mobile-tab={mobileTab}
       style={{ '--left-width': `${leftWidth}%` } as React.CSSProperties}
     >
+
+      <div className="problem-mobile-tabs">
+        <button type="button" onClick={() => setMobileTab('problem')} className={mobileTab === 'problem' ? 'active' : ''}>Problem</button>
+        <button type="button" onClick={() => setMobileTab('code')} className={mobileTab === 'code' ? 'active' : ''}>Code</button>
+        <button type="button" onClick={() => { setMobileTab('result'); setShowOutput(true); }} className={mobileTab === 'result' ? 'active' : ''}>Result</button>
+      </div>
 
       {/* LEFT PANEL — Problem description */}
       <div className="problem-left" style={{ display: 'flex', flexDirection: 'column', borderRight: '1px solid var(--border)', overflow: 'hidden', minHeight: 0, height: '100%' }}>
@@ -653,7 +699,7 @@ export default function ProblemPage() {
             >Custom Input</button>
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <button onClick={() => setShowOutput(!showOutput)} style={{ background: showOutput ? 'rgba(108,99,255,0.2)' : 'transparent', color: showOutput ? '#a78bfa' : 'var(--text-muted)', border: showOutput ? '1px solid rgba(108,99,255,0.4)' : '1px solid var(--border)', borderRadius: 8, padding: '6px 12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontFamily: 'inherit' }}>
+            <button onClick={() => { setShowOutput(!showOutput); setMobileTab('result'); }} style={{ background: showOutput ? 'rgba(108,99,255,0.2)' : 'transparent', color: showOutput ? '#a78bfa' : 'var(--text-muted)', border: showOutput ? '1px solid rgba(108,99,255,0.4)' : '1px solid var(--border)', borderRadius: 8, padding: '6px 12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontFamily: 'inherit' }}>
               {showOutput ? '✕ Close Output' : '○ Output'}
             </button>
             {(runResult || submitResult) && (
@@ -768,6 +814,12 @@ export default function ProblemPage() {
                 </div>
               )}
 
+              {submitResult?.verdict === 'ACCEPTED' && (
+                <div className="flex-height" style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                  <NextProblemCard enabled={true} />
+                </div>
+              )}
+
               {/* Program Output */}
               {runResult?.output && !runLoading && !submitLoading && (
                 <div className="flex-height" style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
@@ -838,6 +890,37 @@ export default function ProblemPage() {
         language={language}
         disabled={!user}
       />
+
+      {showShortcuts && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 1200, background: 'rgba(2,6,23,0.72)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+          onClick={() => setShowShortcuts(false)}
+        >
+          <div
+            style={{ width: 'min(560px, 100%)', background: 'linear-gradient(180deg, rgba(15, 15, 30, 0.98) 0%, rgba(7, 11, 23, 0.98) 100%)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 20, padding: 24, boxShadow: '0 30px 80px rgba(0,0,0,0.5)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <div style={{ fontSize: 18, fontWeight: 800, color: '#fff' }}>Keyboard Shortcuts</div>
+              <button onClick={() => setShowShortcuts(false)} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: 'var(--text-muted)', borderRadius: 10, padding: '6px 10px', cursor: 'pointer' }}>Close</button>
+            </div>
+            <div style={{ display: 'grid', gap: 12 }}>
+              {[
+                ['Ctrl/Cmd + Enter', 'Submit code'],
+                ['Ctrl/Cmd + R', 'Run sample tests'],
+                ['Ctrl/Cmd + H', 'Get a hint'],
+                ['?', 'Open this shortcuts panel'],
+              ].map(([keys, action]) => (
+                <div key={keys} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '12px 14px', borderRadius: 14, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div style={{ color: '#e2e8f0', fontWeight: 700 }}>{action}</div>
+                  <div style={{ color: '#c4b5fd', fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>{keys}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       <style jsx>{`
         .problem-layout {
           display: grid;
@@ -950,6 +1033,53 @@ export default function ProblemPage() {
         /* Make panels inside the output area shrink properly when the editor is resized */
         .problem-right .flex-card { min-width: 0; }
         .problem-right .flex-height { min-height: 0; flex: 1 1 0; display: flex; flex-direction: column; }
+
+        .problem-mobile-tabs {
+          display: none;
+        }
+
+        @media (max-width: 720px) {
+          .problem-mobile-tabs {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            padding: 12px;
+            position: sticky;
+            top: 64px;
+            z-index: 80;
+            background: rgba(3, 0, 20, 0.92);
+            backdrop-filter: blur(14px);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+          }
+
+          .problem-mobile-tabs button {
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(255,255,255,0.03);
+            color: var(--text-muted);
+            border-radius: 12px;
+            padding: 10px 12px;
+            font: inherit;
+            font-weight: 700;
+          }
+
+          .problem-mobile-tabs button.active {
+            background: linear-gradient(135deg, rgba(124,58,237,0.35), rgba(79,70,229,0.35));
+            color: #fff;
+            border-color: rgba(124,58,237,0.45);
+          }
+
+          .problem-layout[data-mobile-tab='problem'] .problem-right,
+          .problem-layout[data-mobile-tab='code'] .problem-left,
+          .problem-layout[data-mobile-tab='result'] .problem-left {
+            display: none !important;
+          }
+
+          .problem-layout[data-mobile-tab='problem'] .problem-left,
+          .problem-layout[data-mobile-tab='code'] .problem-right,
+          .problem-layout[data-mobile-tab='result'] .problem-right {
+            display: flex !important;
+          }
+        }
       `}</style>
     </div>
   );

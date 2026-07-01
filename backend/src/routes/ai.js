@@ -295,6 +295,37 @@ router.post('/interview/:sessionId/message', auth, async (req, res) => {
   }
 });
 
+// GET /api/ai/interview/:sessionId — load a single interview session
+router.get('/interview/:sessionId', auth, async (req, res) => {
+  try {
+    const session = await prisma.interviewSession.findUnique({
+      where: { id: req.params.sessionId },
+      select: {
+        id: true,
+        userId: true,
+        problemId: true,
+        messages: true,
+        score: true,
+        feedback: true,
+        createdAt: true,
+        updatedAt: true,
+        problem: { select: { id: true, slug: true, title: true, difficulty: true } },
+      },
+    });
+
+    if (!session) return res.status(404).json({ error: 'Session not found' });
+    if (session.userId !== req.user.id) return res.status(403).json({ error: 'Forbidden' });
+
+    res.json({
+      ...session,
+      messages: Array.isArray(session.messages) ? session.messages : [],
+    });
+  } catch (err) {
+    req.log?.error({ err: err.message }, '[AI Interview Session]');
+    res.status(500).json({ error: 'Failed to load interview session' });
+  }
+});
+
 // POST /api/ai/interview/:sessionId/end — end session and get scored feedback
 router.post('/interview/:sessionId/end', auth, async (req, res) => {
   try {

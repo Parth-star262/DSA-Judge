@@ -43,6 +43,12 @@ export default function Navbar() {
           >
             Problems
           </Link>
+          <Link
+            href="/interview"
+            className="text-sm font-medium text-slate-300 hover:text-white px-3 py-2 rounded-lg hover:bg-white/5 transition-all duration-200"
+          >
+            Interview
+          </Link>
           {user?.role === 'ADMIN' && (
             <Link
               href="/admin"

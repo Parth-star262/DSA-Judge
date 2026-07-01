@@ -3,8 +3,12 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import api from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
-import { CheckCircle2, CircleDashed, Clock3, RotateCcw, User, Activity, Code2, Trophy } from 'lucide-react';
+import { CheckCircle2, CircleDashed, Clock3, RotateCcw, User, Activity, Code2, Trophy, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
+import ActivityHeatmap from '@/components/ActivityHeatmap';
+import BadgeGallery from '@/components/BadgeGallery';
+import TopicRadarChart from '@/components/TopicRadarChart';
+import SubmissionDiffViewer from '@/components/SubmissionDiffViewer';
 
 interface HistoryProblem {
   title: string;
@@ -16,8 +20,34 @@ interface HistoryItem {
   verdict: string;
   score: number;
   submittedAt: string;
+  language?: string;
+  code: string;
   complexityEstimate?: string | null;
   problem: HistoryProblem;
+}
+
+interface ActivityDay {
+  date: string;
+  count: number;
+}
+
+interface TopicStat {
+  topic: string;
+  slug: string;
+  score: number;
+  solved: number;
+  total: number;
+}
+
+interface BadgeItem {
+  id: string;
+  badgeType: string;
+  awardedAt: string;
+}
+
+interface BadgeMeta {
+  name: string;
+  description: string;
 }
 
 const verdictColor = (verdict: string) => {
@@ -31,12 +61,38 @@ const verdictColor = (verdict: string) => {
 export default function ProfilePage() {
   const { user, loading } = useAuth();
   const [history, setHistory] = useState<HistoryItem[] | null>(null);
+  const [activity, setActivity] = useState<ActivityDay[]>([]);
+  const [topicStats, setTopicStats] = useState<TopicStat[]>([]);
+  const [badges, setBadges] = useState<BadgeItem[]>([]);
+  const [badgeMeta, setBadgeMeta] = useState<Record<string, BadgeMeta>>({});
+  const [loadingData, setLoadingData] = useState(true);
 
   useEffect(() => {
     if (!user) return;
-    api.get('/submissions/user/history')
-      .then((res) => setHistory(res.data || []))
-      .catch(() => setHistory([]));
+
+    let alive = true;
+
+    Promise.allSettled([
+      api.get('/submissions/user/history'),
+      api.get(`/users/${user.id}/activity`),
+      api.get(`/users/${user.id}/topic-stats`),
+      api.get('/badges/me'),
+      api.get('/badges/meta'),
+    ]).then((results) => {
+      if (!alive) return;
+
+      const [historyResult, activityResult, topicResult, badgesResult, metaResult] = results;
+      setHistory(historyResult.status === 'fulfilled' ? historyResult.value.data || [] : []);
+      setActivity(activityResult.status === 'fulfilled' ? activityResult.value.data || [] : []);
+      setTopicStats(topicResult.status === 'fulfilled' ? topicResult.value.data || [] : []);
+      setBadges(badgesResult.status === 'fulfilled' ? badgesResult.value.data || [] : []);
+      setBadgeMeta(metaResult.status === 'fulfilled' ? metaResult.value.data || {} : {});
+      setLoadingData(false);
+    });
+
+    return () => {
+      alive = false;
+    };
   }, [user]);
 
   const stats = useMemo(() => {
@@ -51,7 +107,7 @@ export default function ProfilePage() {
     return { solved, attempted, revisit };
   }, [history]);
 
-  const historyLoading = !!user && history === null;
+  const historyLoading = !!user && (history === null || loadingData);
   const historyItems = history || [];
 
   if (loading) {
@@ -156,6 +212,63 @@ export default function ProfilePage() {
         </motion.div>
       </motion.div>
 
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-12 relative z-10">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="glass rounded-3xl overflow-hidden border border-white/5"
+        >
+          <div className="px-6 py-5 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
+            <h2 className="font-bold text-white tracking-wide text-lg flex items-center gap-2">
+              <Activity size={18} className="text-indigo-400" /> Activity Heatmap
+            </h2>
+            <div className="text-xs uppercase tracking-[0.22em] text-slate-500 font-bold">
+              Daily solves
+            </div>
+          </div>
+          <div className="p-5 md:p-6 overflow-x-auto">
+            <ActivityHeatmap data={activity} />
+          </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="glass rounded-3xl overflow-hidden border border-white/5"
+        >
+          <div className="px-6 py-5 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
+            <h2 className="font-bold text-white tracking-wide text-lg flex items-center gap-2">
+              <Sparkles size={18} className="text-amber-400" /> Badge Gallery
+            </h2>
+            <div className="text-xs uppercase tracking-[0.22em] text-slate-500 font-bold">
+              {badges.length} unlocked
+            </div>
+          </div>
+          <div className="p-5 md:p-6">
+            <BadgeGallery badges={badges} badgeMeta={badgeMeta} />
+          </div>
+        </motion.div>
+      </div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="glass rounded-3xl overflow-hidden border border-white/5 mb-12 relative z-10"
+      >
+        <div className="px-6 py-5 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
+          <h2 className="font-bold text-white tracking-wide text-lg flex items-center gap-2">
+            <Trophy size={18} className="text-fuchsia-400" /> Topic Mastery
+          </h2>
+          <div className="text-xs uppercase tracking-[0.22em] text-slate-500 font-bold">Weighted radar</div>
+        </div>
+        <div className="p-5 md:p-6">
+          <TopicRadarChart data={topicStats} />
+        </div>
+      </motion.div>
+
       <motion.div 
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
         className="glass rounded-3xl overflow-hidden border border-white/5 relative z-10"
@@ -205,6 +318,10 @@ export default function ProfilePage() {
           </div>
         )}
       </motion.div>
+
+      <div className="mt-12 relative z-10">
+        <SubmissionDiffViewer submissions={historyItems} />
+      </div>
     </div>
   );
 }

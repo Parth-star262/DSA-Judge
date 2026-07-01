@@ -20,41 +20,50 @@ const getDisplayCurrentStreak = (streak) => {
 // GET /api/leaderboard/global
 router.get('/leaderboard/global', async (req, res) => {
   try {
-    const limit = Number(req.query.limit || 50);
+    const limit = Math.min(Math.max(Number(req.query.limit || 50), 1), 100);
 
-    const users = await prisma.user.findMany({
-      select: {
-        id: true,
-        name: true,
-        submissions: { select: { verdict: true, problemId: true } },
-        streak: { select: { currentStreak: true, longestStreak: true, lastSolvedAt: true } },
-      },
-    });
+    const leaderboardRows = await prisma.$queryRaw`
+      WITH submission_stats AS (
+        SELECT
+          s."userId",
+          COUNT(*) FILTER (WHERE s.verdict <> 'PENDING')::int AS attempted,
+          COUNT(*) FILTER (WHERE s.verdict = 'ACCEPTED')::int AS accepted_count,
+          COUNT(DISTINCT s."problemId") FILTER (WHERE s.verdict = 'ACCEPTED')::int AS solved
+        FROM "Submission" s
+        GROUP BY s."userId"
+      )
+      SELECT
+        u.id AS "userId",
+        u.name,
+        COALESCE(ss.solved, 0)::int AS solved,
+        COALESCE(ss.attempted, 0)::int AS attempted,
+        CASE
+          WHEN COALESCE(ss.attempted, 0) > 0
+            THEN ROUND((COALESCE(ss.accepted_count, 0)::numeric / ss.attempted) * 100, 1)
+          ELSE 0
+        END::numeric AS "acceptanceRate",
+        COALESCE(st."currentStreak", 0)::int AS "currentStreak",
+        COALESCE(st."longestStreak", 0)::int AS "longestStreak",
+        st."lastSolvedAt" AS "lastSolvedAt"
+      FROM "User" u
+      INNER JOIN submission_stats ss ON ss."userId" = u.id
+      LEFT JOIN "Streak" st ON st."userId" = u.id
+      ORDER BY solved DESC, "acceptanceRate" DESC, "longestStreak" DESC
+      LIMIT ${limit}
+    `;
 
-    const leaderboard = users
-      .map((u) => {
-        const judgedSubmissions = u.submissions.filter((s) => s.verdict !== 'PENDING');
-        const acceptedSubmissions = judgedSubmissions.filter((s) => s.verdict === 'ACCEPTED');
-        const attempted = judgedSubmissions.length;
-        const solved = new Set(acceptedSubmissions.map((s) => s.problemId)).size;
-        const acceptanceRate = attempted > 0 ? (acceptedSubmissions.length / attempted) * 100 : 0;
-        return {
-          userId: u.id,
-          name: u.name,
-          solved,
-          attempted,
-          acceptanceRate: Number(acceptanceRate.toFixed(1)),
-          currentStreak: getDisplayCurrentStreak(u.streak),
-          longestStreak: u.streak?.longestStreak || 0,
-        };
-      })
-      .filter((u) => u.attempted > 0)
-      .sort((a, b) => {
-        if (b.solved !== a.solved) return b.solved - a.solved;
-        if (b.acceptanceRate !== a.acceptanceRate) return b.acceptanceRate - a.acceptanceRate;
-        return b.longestStreak - a.longestStreak;
-      })
-      .slice(0, limit);
+    const leaderboard = leaderboardRows.map((row) => ({
+      userId: row.userId,
+      name: row.name,
+      solved: Number(row.solved),
+      attempted: Number(row.attempted),
+      acceptanceRate: Number(row.acceptanceRate),
+      currentStreak: getDisplayCurrentStreak({
+        currentStreak: Number(row.currentStreak),
+        lastSolvedAt: row.lastSolvedAt,
+      }),
+      longestStreak: Number(row.longestStreak),
+    }));
 
     res.json(leaderboard);
   } catch (err) {

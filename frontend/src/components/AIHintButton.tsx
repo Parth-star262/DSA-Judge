@@ -116,6 +116,17 @@ export default function AIHintButton({ problemSlug, code, language, disabled }: 
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [open]);
 
+  useEffect(() => {
+    const onShortcut = () => {
+      if (!disabled) {
+        void fetchHint();
+      }
+    };
+
+    document.addEventListener('dsa-judge:hint-shortcut', onShortcut);
+    return () => document.removeEventListener('dsa-judge:hint-shortcut', onShortcut);
+  }, [disabled, code, language, problemSlug]);
+
   const fetchHint = async () => {
     if (loading) return;
 
