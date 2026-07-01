@@ -6,7 +6,7 @@ services:
     branch: main
     repo: https://github.com/Parth-star262/DSA-Judge
     rootDir: backend
-    buildCommand: npm ci && npx prisma generate && npx prisma db push && node prisma/seed.js
+    buildCommand: npm ci && npx prisma generate && node prisma/cleanup.js && npx prisma db push --accept-data-loss && node prisma/seed.js
     startCommand: npm start
     envVars:
       - key: DATABASE_URL
