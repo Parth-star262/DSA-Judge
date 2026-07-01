@@ -1,15 +1,11 @@
 const { Queue, Worker, QueueEvents } = require('bullmq');
 const { logger } = require('../middleware/logger');
+const { getBullmqConnection } = require('../services/redis');
 
 const QUEUE_NAME = 'submission-judge';
 
 // ── Redis connection config ────────────────────────────────────────────────────
-const redisConnection = {
-  host: process.env.REDIS_HOST || 'localhost',
-  port: Number(process.env.REDIS_PORT || 6379),
-  password: process.env.REDIS_PASSWORD || undefined,
-  maxRetriesPerRequest: null, // Required for BullMQ
-};
+const redisConnection = getBullmqConnection();
 
 // ── Queue (used by submission route to enqueue jobs) ──────────────────────────
 let submissionQueue = null;

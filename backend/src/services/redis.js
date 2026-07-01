@@ -1,5 +1,26 @@
 const Redis = require('ioredis');
 
+const getBullmqConnection = () => {
+  const url = process.env.REDIS_URL;
+  if (url) {
+    const parsed = new URL(url);
+    return {
+      host: parsed.hostname,
+      port: Number(parsed.port || 6379),
+      password: parsed.password || undefined,
+      maxRetriesPerRequest: null,
+      tls: parsed.protocol === 'rediss:' ? {} : undefined,
+    };
+  }
+
+  return {
+    host: process.env.REDIS_HOST || 'localhost',
+    port: Number(process.env.REDIS_PORT || 6379),
+    password: process.env.REDIS_PASSWORD || undefined,
+    maxRetriesPerRequest: null,
+  };
+};
+
 const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
   maxRetriesPerRequest: 1,
   retryStrategy: (times) => {
@@ -50,6 +71,7 @@ const getTestCaseCache = async (problemId) => {
 
 module.exports = {
   redis,
+  getBullmqConnection,
   setProblemCache,
   getProblemCache,
   setTestCaseCache,
