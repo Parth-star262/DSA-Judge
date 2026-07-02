@@ -12,12 +12,12 @@ export default function LiveTheme() {
     await loadSlim(engine);
   }, []);
 
-  const particlesLoaded = useCallback(async (container: Container | undefined) => {}, []);
+  const particlesLoaded = useCallback(async () => {}, []);
 
   return (
     <Particles
       id="tsparticles"
-      // @ts-ignore - TS doesn't recognize init prop in this version of particles-react
+      // @ts-expect-error - TS doesn't recognize init prop in this version of particles-react
       init={particlesInit}
       loaded={particlesLoaded}
       className="absolute inset-0 z-0"

@@ -14,6 +14,14 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+type RecentActivityItem = {
+  id: string;
+  verdict: string;
+  user: { name: string };
+  problem: { title: string };
+  submittedAt: string;
+};
+
 type DashboardStats = {
   stats: {
     totalUsers: number;
@@ -21,7 +29,7 @@ type DashboardStats = {
     totalSubmissions: number;
     pendingSubmissions: number;
   };
-  recentActivity: any[];
+  recentActivity: RecentActivityItem[];
   problemDistribution: { difficulty: string; _count: number }[];
 };
 
@@ -63,7 +71,7 @@ export default function AdminOverview() {
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-black text-white">Overview</h1>
-        <p className="text-slate-400">Welcome back, Admin. Here's what's happening today.</p>
+        <p className="text-slate-400">Welcome back, Admin. Here&apos;s what&apos;s happening today.</p>
       </div>
 
       {/* Stats Grid */}

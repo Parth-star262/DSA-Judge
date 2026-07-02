@@ -40,7 +40,7 @@ export function streamSubmission(
 ): () => void {
   const url = `${API_URL}/api/submissions/${submissionId}/stream`;
 
-  // EventSource doesn't support custom headers — use fetch + ReadableStream instead
+  // EventSource doesn't support custom headers â€” use fetch + ReadableStream instead
   const controller = new AbortController();
 
   const connect = async () => {
@@ -84,9 +84,10 @@ export function streamSubmission(
           }
         }
       }
-    } catch (err: any) {
-      if (err.name !== 'AbortError') {
-        onEvent({ type: 'error', error: err.message || 'Stream connection error' });
+    } catch (err) {
+      const error = err as Error;
+      if (error?.name !== 'AbortError') {
+        onEvent({ type: 'error', error: error?.message || 'Stream connection error' });
       }
     }
   };

@@ -5,22 +5,36 @@ import { useEffect, useState } from 'react';
 
 export default function LiveBackground() {
   const [mounted, setMounted] = useState(false);
+  const [stars, setStars] = useState<{
+    width: number;
+    height: number;
+    left: string;
+    top: string;
+    duration: number;
+    delay: number;
+  }[]>([]);
   
   useEffect(() => {
-    setMounted(true);
+    let alive = true;
+    Promise.resolve().then(() => {
+      if (alive) {
+        setMounted(true);
+        setStars(Array.from({ length: 40 }).map(() => ({
+          width: Math.random() * 3 + 1,
+          height: Math.random() * 3 + 1,
+          left: `${Math.random() * 100}%`,
+          top: `${Math.random() * 100}%`,
+          duration: Math.random() * 5 + 5,
+          delay: Math.random() * 5,
+        })));
+      }
+    });
+    return () => {
+      alive = false;
+    };
   }, []);
 
   if (!mounted) return null;
-
-  // Generate stable random initial values for stars
-  const stars = Array.from({ length: 40 }).map((_, i) => ({
-    width: Math.random() * 3 + 1,
-    height: Math.random() * 3 + 1,
-    left: `${Math.random() * 100}%`,
-    top: `${Math.random() * 100}%`,
-    duration: Math.random() * 5 + 5,
-    delay: Math.random() * 5,
-  }));
 
   return (
     <div className="fixed inset-0 z-[-1] overflow-hidden bg-[#030014] pointer-events-none selection:bg-transparent">

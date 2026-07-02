@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Code2, LogOut, User, Zap, Sparkles } from 'lucide-react';
-import { motion } from 'framer-motion';
+
 
 export default function Navbar() {
   const { user, logout, enroll, isEnrolled } = useAuth();

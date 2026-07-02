@@ -26,8 +26,12 @@ export default function NextProblemCard({ enabled }: NextProblemCardProps) {
     if (!enabled) return;
 
     let alive = true;
-    setLoading(true);
-    setMessage(null);
+    Promise.resolve().then(() => {
+      if (alive) {
+        setLoading(true);
+        setMessage(null);
+      }
+    });
 
     api.get('/ai/recommend')
       .then((res) => {

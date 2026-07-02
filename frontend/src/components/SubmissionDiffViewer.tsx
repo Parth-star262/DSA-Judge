@@ -25,9 +25,26 @@ export default function SubmissionDiffViewer({ submissions }: SubmissionDiffView
   const left = submissions.find((item) => item.id === leftId) || submissions[0] || null;
   const right = submissions.find((item) => item.id === rightId) || submissions[1] || submissions[0] || null;
 
-  const diff = useMemo(() => {
+  const diffWithLineNumbers = useMemo(() => {
     if (!left || !right) return [];
-    return diffLines(left.code || '', right.code || '');
+    const rawDiff = diffLines(left.code || '', right.code || '');
+    let currentLineNum = 0;
+    return rawDiff.map((part) => {
+      const lines = part.value.split('\n').filter((line) => line.length > 0 || part.value.includes('\n'));
+      const lineData = lines.map((line) => {
+        if (!part.added) {
+          currentLineNum += 1;
+        }
+        return {
+          line,
+          lineNumberDisplay: part.removed ? '-' : currentLineNum,
+        };
+      });
+      return {
+        ...part,
+        lines: lineData,
+      };
+    });
   }, [left, right]);
 
   if (submissions.length < 2 || !left || !right) {
@@ -37,17 +54,6 @@ export default function SubmissionDiffViewer({ submissions }: SubmissionDiffView
       </div>
     );
   }
-
-  const renderLine = (value: string, index: number, background: string, color: string) => (
-    <div key={`${value}-${index}`} className="grid grid-cols-[56px_1fr] gap-3 px-4 py-1.5" style={{ background }}>
-      <span className="text-right text-[11px] text-slate-500 select-none">{index + 1}</span>
-      <pre className="whitespace-pre-wrap break-words text-sm leading-6" style={{ color }}>
-        {value}
-      </pre>
-    </div>
-  );
-
-  let lineNumber = 0;
 
   return (
     <div className="rounded-3xl border border-white/5 bg-white/[0.02] overflow-hidden">
@@ -101,21 +107,18 @@ export default function SubmissionDiffViewer({ submissions }: SubmissionDiffView
       </div>
 
       <div className="max-h-[420px] overflow-auto font-mono text-sm">
-        {diff.map((part, partIndex) => {
-          const lines = part.value.split('\n').filter((line) => line.length > 0 || part.value.includes('\n'));
+        {diffWithLineNumbers.map((part, partIndex) => {
           const isAdded = part.added;
           const isRemoved = part.removed;
           const background = isAdded ? 'rgba(34,197,94,0.08)' : isRemoved ? 'rgba(239,68,68,0.08)' : 'transparent';
           const color = isAdded ? '#86efac' : isRemoved ? '#fca5a5' : '#e2e8f0';
 
-          return lines.map((line, lineIndex) => {
-            if (!isAdded) lineNumber += 1;
-            const currentLine = isRemoved ? '-' : lineNumber;
+          return part.lines.map((lineItem, lineIndex) => {
             return (
               <div key={`${partIndex}-${lineIndex}`} className="grid grid-cols-[56px_1fr] gap-3 px-4 py-1.5" style={{ background }}>
-                <span className="text-right text-[11px] text-slate-500 select-none">{currentLine}</span>
+                <span className="text-right text-[11px] text-slate-500 select-none">{lineItem.lineNumberDisplay}</span>
                 <pre className="whitespace-pre-wrap break-words leading-6" style={{ color }}>
-                  {isAdded ? `+ ${line}` : isRemoved ? `- ${line}` : line}
+                  {isAdded ? `+ ${lineItem.line}` : isRemoved ? `- ${lineItem.line}` : lineItem.line}
                 </pre>
               </div>
             );
