@@ -127,12 +127,10 @@ int main() {
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
 
-    string line;
-    if (!getline(cin, line)) return 0;
-    stringstream ss(line);
-    vector<int> nums;
-    int val;
-    while (ss >> val) nums.push_back(val);
+    int n;
+    if (!(cin >> n)) return 0;
+    vector<int> nums(n);
+    for (int i = 0; i < n; ++i) cin >> nums[i];
 
     Solution sol;
     vector<int> ans = sol.separateDigits(nums);
@@ -228,10 +226,11 @@ if __name__ == '__main__':
 
 def _driver():
     import sys
-    line = sys.stdin.read().strip()
-    if not line:
+    data = sys.stdin.read().strip().split()
+    if not data:
         return
-    nums = list(map(int, line.split()))
+    n = int(data[0])
+    nums = list(map(int, data[1:1+n])) if n > 0 else []
 
     if 'Solution' in globals():
         ans = Solution().separateDigits(nums)
@@ -310,9 +309,10 @@ const buildJavaScriptHarness = (problemSlug, userCode) => {
 
 (function driver() {
   const fs = require('fs');
-  const input = fs.readFileSync(0, 'utf8').trim();
-  if (!input) return;
-  const nums = input.split(/\s+/).map(Number);
+  const tokens = fs.readFileSync(0, 'utf8').trim().split(/\s+/);
+  if (!tokens.length) return;
+  const n = parseInt(tokens[0], 10) || 0;
+  const nums = tokens.slice(1, 1 + n).map(Number);
   const ans = separateDigits(nums);
   if (Array.isArray(ans)) {
     process.stdout.write(ans.join(' '));
@@ -398,12 +398,16 @@ class Main {
 class Main {
   public static void main(String[] args) throws Exception {
     java.io.BufferedReader br = new java.io.BufferedReader(new java.io.InputStreamReader(System.in));
-    String line = br.readLine();
-    if (line == null || line.trim().isEmpty()) return;
-
-    String[] parts = line.trim().split("\\s+");
-    int[] nums = new int[parts.length];
-    for (int i = 0; i < parts.length; i++) nums[i] = Integer.parseInt(parts[i]);
+    String first = br.readLine();
+    if (first == null || first.trim().isEmpty()) return;
+    String[] firstParts = first.trim().split("\\s+");
+    int n = Integer.parseInt(firstParts[0]);
+    int[] nums = new int[n];
+    if (n > 0) {
+      String line = br.readLine();
+      String[] parts = line == null ? new String[0] : line.trim().split("\\s+");
+      for (int i = 0; i < Math.min(n, parts.length); i++) nums[i] = Integer.parseInt(parts[i]);
+    }
 
     Solution sol = new Solution();
     int[] ans = sol.separateDigits(nums);
