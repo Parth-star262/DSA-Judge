@@ -88,7 +88,7 @@ export default function InterviewPage() {
     }
   };
 
-  const loadSession = async (sessionId: string) => {
+  const loadSession = async (sessionId: string, options?: { silent?: boolean }) => {
     setPageError(null);
     try {
       const res = await api.get(`/ai/interview/${sessionId}`);
@@ -96,7 +96,18 @@ export default function InterviewPage() {
       setSelectedSessionId(sessionId);
       localStorage.setItem('interview-session-id', sessionId);
     } catch (error: any) {
-      setPageError(error?.response?.data?.error || 'Failed to load interview session.');
+      const status = error?.response?.status;
+
+      if (status === 404 || status === 403) {
+        localStorage.removeItem('interview-session-id');
+        setCurrentSession(null);
+        setSelectedSessionId(null);
+        return;
+      }
+
+      if (!options?.silent) {
+        setPageError(error?.response?.data?.error || 'Failed to load interview session.');
+      }
     }
   };
 
@@ -107,7 +118,7 @@ export default function InterviewPage() {
 
     const savedSessionId = localStorage.getItem('interview-session-id');
     if (savedSessionId) {
-      loadSession(savedSessionId).catch(() => undefined);
+      loadSession(savedSessionId, { silent: true }).catch(() => undefined);
     }
   }, [user]);
 
