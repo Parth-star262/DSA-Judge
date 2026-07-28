@@ -7,11 +7,6 @@ const logger = pino({
   formatters: {
     level: (label) => ({ level: label }),
   },
-  // Pretty-print in dev; structured JSON in production
-  transport:
-    process.env.NODE_ENV !== 'production'
-      ? { target: 'pino-pretty', options: { colorize: true, translateTime: 'HH:MM:ss', ignore: 'pid,hostname,service' } }
-      : undefined,
 });
 
 /**

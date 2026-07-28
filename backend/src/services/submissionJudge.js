@@ -182,6 +182,5 @@ const judgeSubmission = async ({ submissionId, userId, problem, code, language }
 
   return { ...result, newBadges };
 };
-
 module.exports = { judgeSubmission };
 

@@ -1,6 +1,7 @@
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { v4: uuidv4 } = require('uuid');
+const { ipKeyGenerator } = require('express-rate-limit');
 
 // ── Request ID middleware ─────────────────────────────────────────────────────
 const requestId = (req, res, next) => {
@@ -22,7 +23,7 @@ const globalLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many requests, please try again later.' },
-  keyGenerator: (req) => req.headers['x-forwarded-for'] || req.ip,
+  keyGenerator: (req) => req.headers['x-forwarded-for'] || ipKeyGenerator(req.ip),
 });
 
 // ── Auth rate limiter (login/register: tight) ─────────────────────────────────
@@ -32,7 +33,7 @@ const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many auth attempts, please try again in 15 minutes.' },
-  keyGenerator: (req) => req.headers['x-forwarded-for'] || req.ip,
+  keyGenerator: (req) => req.headers['x-forwarded-for'] || ipKeyGenerator(req.ip),
 });
 
 // ── Submission rate limiter (prevent abuse of code execution) ─────────────────
@@ -42,7 +43,7 @@ const submissionLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Submission rate limit exceeded. Please wait before submitting again.' },
-  keyGenerator: (req) => req.user?.id || req.headers['x-forwarded-for'] || req.ip,
+  keyGenerator: (req) => req.user?.id || req.headers['x-forwarded-for'] || ipKeyGenerator(req.ip),
 });
 
 // ── AI rate limiter ────────────────────────────────────────────────────────────
@@ -52,7 +53,7 @@ const aiLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'AI request limit reached. Please wait a moment.' },
-  keyGenerator: (req) => req.user?.id || req.headers['x-forwarded-for'] || req.ip,
+  keyGenerator: (req) => req.user?.id || req.headers['x-forwarded-for'] || ipKeyGenerator(req.ip),
 });
 
 module.exports = {
