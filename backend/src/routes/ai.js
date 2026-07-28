@@ -229,7 +229,7 @@ Be professional, encouraging but rigorous. Keep responses concise (3-5 lines max
       ? `Start the interview with this problem:\n${problemContext}`
       : 'Start a DSA interview with a medium-difficulty problem of your choice.';
 
-    const result = await callAI(systemPrompt, userPrompt, null);
+    const result = await callAI(systemPrompt, userPrompt, null, { maxTokens: 600, maxLines: 12 });
     if (!result.ok) return res.status(503).json({ error: result.text });
 
     const messages = [
@@ -272,7 +272,7 @@ router.post('/interview/:sessionId/message', auth, async (req, res) => {
       .join('\n');
 
     const userPrompt = `${conversationHistory}\nCandidate: ${message}\n\nContinue the interview. Probe deeper or move to the next aspect.`;
-    const result = await callAI(systemMsg?.content || 'You are a technical interviewer.', userPrompt, null);
+    const result = await callAI(systemMsg?.content || 'You are a technical interviewer.', userPrompt, null, { maxTokens: 600, maxLines: 12 });
 
     if (!result.ok) return res.status(503).json({ error: result.text });
 
@@ -348,7 +348,7 @@ Edge Cases: (1 sentence)
 Complexity Awareness: (1 sentence)
 Overall: (1 sentence with key advice)`;
 
-    const result = await callAI(systemPrompt, userPrompt, null);
+    const result = await callAI(systemPrompt, userPrompt, null, { maxTokens: 800, maxLines: 20 });
 
     // Parse score from response
     const scoreMatch = result.text.match(/Score:\s*(\d+)/i);

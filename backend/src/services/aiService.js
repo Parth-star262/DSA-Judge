@@ -60,7 +60,7 @@ const getModel = () => {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return null;
   const genAI = new GoogleGenerativeAI(apiKey);
-  model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-preview-05-20' });
+  model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
   return model;
 };
 
@@ -76,7 +76,20 @@ const getGroq = () => {
 };
 
 // ── Shared call wrapper (with Groq Fallback) ─────────────────────────────────
-const callAI = async (systemPrompt, userPrompt, cacheKey) => {
+// opts.maxTokens  — override token budget  (default: 220)
+// opts.maxLines   — override line cap       (default: 5)
+const callAI = async (systemPrompt, userPrompt, cacheKey, opts = {}) => {
+  const maxTokens = opts.maxTokens || 220;
+  const maxLines  = opts.maxLines  || 5;
+
+  const trimResponse = (raw) => {
+    const lines = String(raw || '')
+      .split('\n')
+      .map((l) => l.trimEnd())
+      .filter(Boolean);
+    return lines.slice(0, maxLines).join('\n').trim();
+  };
+
   const cached = getCachedResponse(cacheKey);
   if (cached) {
     return { ok: true, text: cached, cached: true };
@@ -90,11 +103,11 @@ const callAI = async (systemPrompt, userPrompt, cacheKey) => {
         contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
         systemInstruction: { parts: [{ text: systemPrompt }] },
         generationConfig: {
-          maxOutputTokens: 220,
+          maxOutputTokens: maxTokens,
           temperature: 0.3,
         },
       });
-      const text = limitToShortResponse(result?.response?.text?.() || '');
+      const text = trimResponse(result?.response?.text?.() || '');
       if (text) {
         setCachedResponse(cacheKey, text);
         return { ok: true, text };
@@ -114,10 +127,10 @@ const callAI = async (systemPrompt, userPrompt, cacheKey) => {
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
-        max_tokens: 220,
+        max_tokens: maxTokens,
         temperature: 0.3,
       });
-      const text = limitToShortResponse(chat.choices[0]?.message?.content || '');
+      const text = trimResponse(chat.choices[0]?.message?.content || '');
       if (text) {
         setCachedResponse(cacheKey, text);
         return { ok: true, text };
