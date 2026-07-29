@@ -61,6 +61,44 @@ const getLeetCodeSolved = async (username) => {
 
 const getLeetCodeRatingHistory = async (username) => {
   try {
+    const response = await axios.post('https://leetcode.com/graphql', {
+      query: `query contestRanking($username: String!) {
+        userContestRanking(username: $username) {
+          rating
+          globalRanking
+          attendedContestsCount
+        }
+        userContestRankingHistory(username: $username) {
+          attended
+          rating
+          ranking
+          finishTimeInSeconds
+          contest { title startTime }
+        }
+      }`,
+      variables: { username },
+    }, {
+      timeout: 10000,
+      headers: { 'Content-Type': 'application/json', 'User-Agent': 'DSA-Judge Platform Tracker' },
+    });
+    const contestRanking = response.data?.data?.userContestRanking;
+    const history = (response.data?.data?.userContestRankingHistory || [])
+      .filter((item) => item.attended && Number.isFinite(item.rating))
+      .map((item) => ({
+        date: new Date((item.finishTimeInSeconds || item.contest?.startTime) * 1000).toISOString(),
+        rating: Math.round(item.rating),
+        rank: item.ranking,
+        contestName: item.contest?.title,
+      }))
+      .filter((item) => !Number.isNaN(new Date(item.date).getTime()));
+    if (Number.isFinite(contestRanking?.rating)) {
+      return { ratingHistory: history, currentRating: Math.round(contestRanking.rating) };
+    }
+  } catch {
+    // Some cloud IPs are blocked by LeetCode; use the public no-key mirror as a fallback.
+  }
+
+  try {
     const response = await axios.get(`https://leetcode-stats.tashif.codes/${encodeURIComponent(username)}/rating`, { timeout: 10000 });
     const history = (response.data?.data?.history || [])
       .map((item) => ({
