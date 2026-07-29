@@ -10,27 +10,55 @@ datasource db {
 }
 
 model User {
-  id                String             @id @default(uuid())
-  name              String
-  email             String             @unique
-  passwordHash      String
-  role              Role               @default(FREE)
-  createdAt         DateTime           @default(now())
-  submissions       Submission[]
-  progress          UserProgress[]
-  streak            Streak?
-  bookmarks         Bookmark[]
-  collections       Collection[]
-  comments          Comment[]
-  ratings           Rating[]
-  badges            Badge[]
-  interviewSessions InterviewSession[]
+  id                 String                    @id @default(uuid())
+  name               String
+  email              String                    @unique
+  passwordHash       String
+  role               Role                      @default(FREE)
+  createdAt          DateTime                  @default(now())
+  submissions        Submission[]
+  progress           UserProgress[]
+  streak             Streak?
+  bookmarks          Bookmark[]
+  collections        Collection[]
+  comments           Comment[]
+  ratings            Rating[]
+  badges             Badge[]
+  platformAccounts   PlatformAccount[]
+  interviewSessions  InterviewSession[]
+  interviewProfile   InterviewProfile?
+  interviewQuestions InterviewQuestionResult[]
 }
 
 enum Role {
   FREE
   ENROLLED
   ADMIN
+}
+
+enum CodingPlatform {
+  CODEFORCES
+  LEETCODE
+  CODECHEF
+  HACKERRANK
+  GEEKSFORGEEKS
+  ATCODER
+}
+
+model PlatformAccount {
+  id           String         @id @default(uuid())
+  userId       String
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform     CodingPlatform
+  username     String
+  solvedCount  Int            @default(0)
+  isVerified   Boolean        @default(false)
+  lastSyncedAt DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@unique([userId, platform])
+  @@index([userId])
 }
 
 model Topic {
@@ -238,23 +266,83 @@ model Badge {
   problemId String?
   awardedAt DateTime @default(now())
 
-  @@index([userId])
   @@unique([userId, badgeType])
+  @@index([userId])
 }
 
 // ── Phase 3: AI Interview Sessions ────────────────────────────────────────────
+
+enum SkillLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum InterviewDifficulty {
+  EASY
+  MEDIUM
+  HARD
+  MIXED
+}
+
+model InterviewProfile {
+  id                  String              @id @default(uuid())
+  userId              String              @unique
+  user                User                @relation(fields: [userId], references: [id])
+  skillLevel          SkillLevel          @default(BEGINNER)
+  targetCompanies     String[]            @default([])
+  preferredLanguage   String              @default("python")
+  preferredDifficulty InterviewDifficulty @default(MIXED)
+  weakTopics          String[]            @default([])
+  strongTopics        String[]            @default([])
+  assessmentDone      Boolean             @default(false)
+  totalSessions       Int                 @default(0)
+  avgScore            Float               @default(0)
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+}
+
 model InterviewSession {
-  id        String   @id @default(uuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  problemId String?
-  messages  Json // Array of {role, content} objects
-  score     Int?
-  feedback  String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              String                    @id @default(uuid())
+  userId          String
+  user            User                      @relation(fields: [userId], references: [id])
+  problemId       String?
+  messages        Json // Array of {role, content} objects
+  score           Int?
+  feedback        String?
+  difficulty      InterviewDifficulty       @default(MIXED)
+  mode            String                    @default("standard") // standard | topic-focus | theory | code-review
+  topicsCovered   String[]                  @default([])
+  durationSeconds Int                       @default(0)
+  reportGenerated Boolean                   @default(false)
+  questionResults InterviewQuestionResult[]
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
 
   @@index([userId])
+}
+
+model InterviewQuestionResult {
+  id                  String           @id @default(uuid())
+  sessionId           String
+  session             InterviewSession @relation(fields: [sessionId], references: [id])
+  userId              String
+  user                User             @relation(fields: [userId], references: [id])
+  questionText        String
+  userAnswer          String           @default("")
+  topic               String
+  difficulty          String           @default("MEDIUM")
+  score               Int              @default(0) // 0-10
+  strengths           String[]         @default([])
+  mistakes            String[]         @default([])
+  betterApproach      String           @default("")
+  interviewerFeedback String           @default("")
+  conceptsToRevise    String[]         @default([])
+  timeTakenSeconds    Int              @default(0)
+  createdAt           DateTime         @default(now())
+
+  @@index([sessionId])
+  @@index([userId, topic])
 }
 
 // ── Phase 4: Contests ─────────────────────────────────────────────────────────

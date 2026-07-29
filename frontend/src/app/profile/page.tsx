@@ -9,6 +9,7 @@ import ActivityHeatmap from '@/components/ActivityHeatmap';
 import BadgeGallery from '@/components/BadgeGallery';
 import TopicRadarChart from '@/components/TopicRadarChart';
 import SubmissionDiffViewer from '@/components/SubmissionDiffViewer';
+import PlatformTracker from '@/components/PlatformTracker';
 
 interface HistoryProblem {
   title: string;
@@ -267,6 +268,10 @@ export default function ProfilePage() {
         <div className="p-5 md:p-6">
           <TopicRadarChart data={topicStats} />
         </div>
+      </motion.div>
+
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="mb-12 relative z-10">
+        <PlatformTracker />
       </motion.div>
 
       <motion.div 

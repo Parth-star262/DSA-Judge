@@ -4,6 +4,7 @@ import Link from 'next/link';
 import api from '@/lib/api';
 import { Activity, CheckCircle2, CircleDashed, Clock3, Code2, RotateCcw, Trophy, User } from 'lucide-react';
 import { motion } from 'framer-motion';
+import ActivityHeatmap from '@/components/ActivityHeatmap';
 
 interface HistoryItem {
   id: string;
@@ -19,6 +20,12 @@ interface PublicProfile {
   email: string;
   role: string;
   submissions: HistoryItem[];
+  platformAccounts: { platform: string; username: string; solvedCount: number; isVerified: boolean; lastSyncedAt: string | null }[];
+}
+
+interface ActivityDay {
+  date: string;
+  count: number;
 }
 
 const verdictColor = (verdict: string) => {
@@ -32,13 +39,17 @@ const verdictColor = (verdict: string) => {
 export default function PublicProfilePage({ params }: { params: Promise<{ userId: string }> }) {
   const { userId } = use(params);
   const [profile, setProfile] = useState<PublicProfile | null>(null);
+  const [activity, setActivity] = useState<ActivityDay[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.get(`/users/${userId}/profile`)
-      .then((res) => setProfile(res.data))
-      .catch(() => setProfile(null))
-      .finally(() => setLoading(false));
+    Promise.allSettled([
+      api.get(`/users/${userId}/profile`),
+      api.get(`/users/${userId}/activity`),
+    ]).then(([profileResult, activityResult]) => {
+      setProfile(profileResult.status === 'fulfilled' ? profileResult.value.data : null);
+      setActivity(activityResult.status === 'fulfilled' ? activityResult.value.data || [] : []);
+    }).finally(() => setLoading(false));
   }, [userId]);
 
   const stats = useMemo(() => {
@@ -106,6 +117,31 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userId
           <div className="text-5xl font-black text-white">{stats.revisit}</div>
         </div>
       </div>
+
+      <div className="glass rounded-3xl overflow-hidden border border-white/5 mb-12">
+        <div className="px-6 py-5 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
+          <h2 className="font-bold text-white tracking-wide text-lg flex items-center gap-2">
+            <Activity size={18} className="text-emerald-400" /> Activity Heatmap
+          </h2>
+          <div className="text-xs uppercase tracking-[0.22em] text-slate-500 font-bold">Daily solves</div>
+        </div>
+        <div className="p-5 md:p-6 overflow-x-auto">
+          <ActivityHeatmap data={activity} />
+        </div>
+      </div>
+
+      {profile.platformAccounts.length > 0 && <div className="glass rounded-3xl overflow-hidden border border-white/5 mb-12">
+        <div className="px-6 py-5 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
+          <h2 className="font-bold text-white tracking-wide text-lg flex items-center gap-2"><Code2 size={18} className="text-emerald-400" /> Connected Platforms</h2>
+          <div className="text-right"><div className="text-xl font-black text-white">{profile.platformAccounts.reduce((sum, account) => sum + account.solvedCount, 0)}</div><div className="text-[10px] uppercase tracking-wider text-slate-500">External solves</div></div>
+        </div>
+        <div className="p-5 md:p-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {profile.platformAccounts.map((account) => <div key={account.platform} className="rounded-xl border border-white/5 bg-white/[0.025] p-4 flex items-center justify-between">
+            <div><div className="text-slate-100 font-semibold">{account.platform.replace('GEEKSFORGEEKS', 'GeeksforGeeks').replace('_', ' ')}</div><div className="text-slate-500 text-xs">@{account.username}</div></div>
+            <div className="text-right"><div className="text-xl font-black text-white">{account.solvedCount}</div><div className="text-[10px] uppercase tracking-wider text-slate-500">solved</div></div>
+          </div>)}
+        </div>
+      </div>}
 
       <div className="glass rounded-3xl overflow-hidden border border-white/5">
         <div className="px-6 py-5 border-b border-white/5 bg-white/[0.02]">

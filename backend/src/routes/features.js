@@ -1,8 +1,17 @@
 const express = require('express');
+const axios = require('axios');
 const prisma = require('../services/prisma');
 const { auth } = require('../middleware/auth');
 
 const router = express.Router();
+
+const PLATFORM_NAMES = new Set(['CODEFORCES', 'LEETCODE', 'CODECHEF', 'HACKERRANK', 'GEEKSFORGEEKS', 'ATCODER']);
+
+const countCodeforcesSolved = (submissions) => new Set(
+  submissions
+    .filter((submission) => submission.verdict === 'OK' && submission.problem)
+    .map((submission) => `${submission.problem.contestId || 'practice'}:${submission.problem.index || submission.problem.name}`)
+).size;
 
 const startOfLocalDay = (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate());
 
@@ -81,6 +90,10 @@ router.get('/users/:userId/profile', async (req, res) => {
         name: true,
         email: true,
         role: true,
+        platformAccounts: {
+          select: { platform: true, username: true, solvedCount: true, isVerified: true, lastSyncedAt: true },
+          orderBy: { createdAt: 'asc' },
+        },
         streak: { select: { currentStreak: true, longestStreak: true, lastSolvedAt: true } },
         submissions: {
           orderBy: { submittedAt: 'desc' },
@@ -102,6 +115,89 @@ router.get('/users/:userId/profile', async (req, res) => {
       ...user,
       streak: user.streak ? { ...user.streak, currentStreak: getDisplayCurrentStreak(user.streak) } : null,
     });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/platform-accounts — accounts connected by the signed-in user
+router.get('/platform-accounts', auth, async (req, res) => {
+  try {
+    const accounts = await prisma.platformAccount.findMany({
+      where: { userId: req.user.id },
+      orderBy: { createdAt: 'asc' },
+    });
+    res.json(accounts);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PUT /api/platform-accounts — add or update a public handle and its displayed total
+router.put('/platform-accounts', auth, async (req, res) => {
+  try {
+    const platform = String(req.body.platform || '').toUpperCase();
+    const username = String(req.body.username || '').trim();
+    const solvedCount = Number(req.body.solvedCount);
+
+    if (!PLATFORM_NAMES.has(platform)) return res.status(400).json({ error: 'Unsupported platform' });
+    if (!username || username.length > 100) return res.status(400).json({ error: 'Enter a valid public username' });
+    if (platform !== 'CODEFORCES' && (!Number.isInteger(solvedCount) || solvedCount < 0)) {
+      return res.status(400).json({ error: 'Enter a valid solved-problem total' });
+    }
+
+    const account = await prisma.platformAccount.upsert({
+      where: { userId_platform: { userId: req.user.id, platform } },
+      create: {
+        userId: req.user.id,
+        platform,
+        username,
+        solvedCount: platform === 'CODEFORCES' ? 0 : solvedCount,
+        isVerified: false,
+      },
+      update: {
+        username,
+        ...(platform === 'CODEFORCES' ? {} : { solvedCount, isVerified: false }),
+      },
+    });
+    res.status(201).json(account);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/platform-accounts/codeforces/refresh — free public API sync
+router.post('/platform-accounts/codeforces/refresh', auth, async (req, res) => {
+  try {
+    const account = await prisma.platformAccount.findUnique({
+      where: { userId_platform: { userId: req.user.id, platform: 'CODEFORCES' } },
+    });
+    if (!account) return res.status(404).json({ error: 'Add a Codeforces handle first' });
+
+    const response = await axios.get('https://codeforces.com/api/user.status', {
+      params: { handle: account.username },
+      timeout: 10000,
+    });
+    if (response.data?.status !== 'OK') return res.status(400).json({ error: 'Codeforces handle was not found' });
+
+    const updated = await prisma.platformAccount.update({
+      where: { id: account.id },
+      data: { solvedCount: countCodeforcesSolved(response.data.result), isVerified: true, lastSyncedAt: new Date() },
+    });
+    res.json(updated);
+  } catch (err) {
+    const status = err.response?.status;
+    res.status(status === 404 ? 400 : 502).json({ error: 'Unable to refresh Codeforces right now. Please try again shortly.' });
+  }
+});
+
+// DELETE /api/platform-accounts/:platform — remove a connected platform
+router.delete('/platform-accounts/:platform', auth, async (req, res) => {
+  try {
+    const platform = String(req.params.platform || '').toUpperCase();
+    if (!PLATFORM_NAMES.has(platform)) return res.status(400).json({ error: 'Unsupported platform' });
+    await prisma.platformAccount.deleteMany({ where: { userId: req.user.id, platform } });
+    res.status(204).end();
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
