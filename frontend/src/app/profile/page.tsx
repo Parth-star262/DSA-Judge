@@ -1,15 +1,16 @@
 'use client';
-import { useEffect, useMemo, useState } from 'react';
+import { ChangeEvent, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import api from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
-import { CheckCircle2, CircleDashed, Clock3, RotateCcw, User, Activity, Code2, Trophy, Sparkles } from 'lucide-react';
+import { CheckCircle2, CircleDashed, Clock3, RotateCcw, User, Activity, Code2, Trophy, Sparkles, Globe2, Pencil } from 'lucide-react';
 import { motion } from 'framer-motion';
 import ActivityHeatmap from '@/components/ActivityHeatmap';
 import BadgeGallery from '@/components/BadgeGallery';
 import TopicRadarChart from '@/components/TopicRadarChart';
 import SubmissionDiffViewer from '@/components/SubmissionDiffViewer';
 import PlatformTracker from '@/components/PlatformTracker';
+import PlatformRankChart from '@/components/PlatformRankChart';
 
 interface HistoryProblem {
   title: string;
@@ -51,6 +52,12 @@ interface BadgeMeta {
   description: string;
 }
 
+interface ProfileDetails {
+  avatarUrl: string | null;
+  githubUrl: string | null;
+  linkedinUrl: string | null;
+}
+
 const verdictColor = (verdict: string) => {
   if (verdict === 'ACCEPTED') return 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20';
   if (verdict === 'PARTIAL') return 'text-amber-400 bg-amber-500/10 border-amber-500/20';
@@ -66,6 +73,9 @@ export default function ProfilePage() {
   const [topicStats, setTopicStats] = useState<TopicStat[]>([]);
   const [badges, setBadges] = useState<BadgeItem[]>([]);
   const [badgeMeta, setBadgeMeta] = useState<Record<string, BadgeMeta>>({});
+  const [profileDetails, setProfileDetails] = useState<ProfileDetails | null>(null);
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
 
   useEffect(() => {
@@ -79,15 +89,17 @@ export default function ProfilePage() {
       api.get(`/users/${user.id}/topic-stats`),
       api.get('/badges/me'),
       api.get('/badges/meta'),
+      api.get('/profile/settings'),
     ]).then((results) => {
       if (!alive) return;
 
-      const [historyResult, activityResult, topicResult, badgesResult, metaResult] = results;
+      const [historyResult, activityResult, topicResult, badgesResult, metaResult, profileResult] = results;
       setHistory(historyResult.status === 'fulfilled' ? historyResult.value.data || [] : []);
       setActivity(activityResult.status === 'fulfilled' ? activityResult.value.data || [] : []);
       setTopicStats(topicResult.status === 'fulfilled' ? topicResult.value.data || [] : []);
       setBadges(badgesResult.status === 'fulfilled' ? badgesResult.value.data || [] : []);
       setBadgeMeta(metaResult.status === 'fulfilled' ? metaResult.value.data || {} : {});
+      setProfileDetails(profileResult.status === 'fulfilled' ? profileResult.value.data : null);
       setLoadingData(false);
     });
 
@@ -110,6 +122,31 @@ export default function ProfilePage() {
 
   const historyLoading = !!user && (history === null || loadingData);
   const historyItems = history || [];
+
+  const saveProfileDetails = async () => {
+    if (!profileDetails) return;
+    setSavingProfile(true);
+    try {
+      const result = await api.put('/profile/settings', profileDetails);
+      setProfileDetails(result.data);
+      setEditingProfile(false);
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const uploadAvatar = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !profileDetails) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 1000000) {
+      window.alert('Use a JPG, PNG, or WebP image smaller than 1 MB.');
+      event.target.value = '';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => setProfileDetails({ ...profileDetails, avatarUrl: String(reader.result) });
+    reader.readAsDataURL(file);
+  };
 
   if (loading) {
     return (
@@ -162,13 +199,24 @@ export default function ProfilePage() {
         <aside className="xl:sticky xl:top-6 self-start glass rounded-2xl border border-white/5 overflow-hidden bg-[#121317]">
           <div className="p-6 text-center border-b border-white/5">
             <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-orange-400 via-amber-400 to-emerald-400 p-1 shadow-[0_0_24px_rgba(245,158,11,0.2)]">
-              <div className="w-full h-full rounded-full bg-[#121317] flex items-center justify-center">
-                <span className="text-4xl font-black text-slate-100">{user.name.charAt(0).toUpperCase()}</span>
-              </div>
+              {profileDetails?.avatarUrl ? <img src={profileDetails.avatarUrl} alt={`${user.name}'s profile`} className="w-full h-full rounded-full object-cover bg-[#121317]" /> : <div className="w-full h-full rounded-full bg-[#121317] flex items-center justify-center"><span className="text-4xl font-black text-slate-100">{user.name.charAt(0).toUpperCase()}</span></div>}
             </div>
             <h1 className="mt-4 text-xl font-extrabold text-white tracking-wide uppercase">{user.name}</h1>
             <p className="mt-1 text-xs text-blue-400 font-semibold truncate">{user.email}</p>
             <Link href="/problems"><button className="mt-5 w-full rounded-lg bg-white/[0.08] py-2.5 text-sm font-semibold text-orange-400 hover:bg-white/[0.12] transition">Solve a problem</button></Link>
+            <div className="mt-4 flex items-center justify-center gap-3 text-slate-500">
+              {profileDetails?.githubUrl && <a href={profileDetails.githubUrl} target="_blank" rel="noreferrer" title="GitHub" className="text-xs font-bold hover:text-white">GH</a>}
+              {profileDetails?.linkedinUrl && <a href={profileDetails.linkedinUrl} target="_blank" rel="noreferrer" title="LinkedIn" className="text-xs font-bold hover:text-[#60a5fa]">in</a>}
+              {(profileDetails?.githubUrl || profileDetails?.linkedinUrl) && <Globe2 size={17} />}
+              <button onClick={() => setEditingProfile((current) => !current)} title="Edit profile links" className="hover:text-orange-400"><Pencil size={17} /></button>
+            </div>
+            {editingProfile && profileDetails && <div className="mt-4 pt-4 border-t border-white/5 text-left space-y-2">
+              <label className="block text-[11px] text-slate-400">Profile photo (JPG, PNG, or WebP; max 1 MB)<input type="file" accept="image/jpeg,image/png,image/webp" onChange={uploadAvatar} className="mt-1.5 block w-full text-xs text-slate-400 file:mr-3 file:rounded-md file:border-0 file:bg-orange-500/15 file:px-2.5 file:py-1.5 file:text-xs file:font-semibold file:text-orange-300 hover:file:bg-orange-500/25" /></label>
+              <input value={profileDetails.avatarUrl?.startsWith('data:image/') ? '' : profileDetails.avatarUrl || ''} onChange={(event) => setProfileDetails({ ...profileDetails, avatarUrl: event.target.value })} placeholder="Or paste a photo URL" className="w-full rounded-md bg-black/20 border border-white/10 px-2.5 py-2 text-xs text-white outline-none" />
+              <input value={profileDetails.githubUrl || ''} onChange={(event) => setProfileDetails({ ...profileDetails, githubUrl: event.target.value })} placeholder="GitHub profile URL" className="w-full rounded-md bg-black/20 border border-white/10 px-2.5 py-2 text-xs text-white outline-none" />
+              <input value={profileDetails.linkedinUrl || ''} onChange={(event) => setProfileDetails({ ...profileDetails, linkedinUrl: event.target.value })} placeholder="LinkedIn profile URL" className="w-full rounded-md bg-black/20 border border-white/10 px-2.5 py-2 text-xs text-white outline-none" />
+              <button onClick={saveProfileDetails} disabled={savingProfile} className="w-full rounded-md bg-orange-500/15 py-2 text-xs font-bold text-orange-300 disabled:opacity-60">{savingProfile ? 'Saving…' : 'Save profile'}</button>
+            </div>}
           </div>
           <div className="p-3"><PlatformTracker /></div>
         </aside>
@@ -273,7 +321,11 @@ export default function ProfilePage() {
         </div>
       </motion.div>
 
-      <motion.div 
+      <div className="mb-5">
+        <PlatformRankChart />
+      </div>
+
+      <motion.div
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
         className="glass rounded-xl overflow-hidden border border-white/5 bg-[#16171b]"
       >

@@ -14,6 +14,9 @@ model User {
   name               String
   email              String                    @unique
   passwordHash       String
+  avatarUrl          String?
+  githubUrl          String?
+  linkedinUrl        String?
   role               Role                      @default(FREE)
   createdAt          DateTime                  @default(now())
   submissions        Submission[]
@@ -46,16 +49,19 @@ enum CodingPlatform {
 }
 
 model PlatformAccount {
-  id           String         @id @default(uuid())
-  userId       String
-  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  platform     CodingPlatform
-  username     String
-  solvedCount  Int            @default(0)
-  isVerified   Boolean        @default(false)
-  lastSyncedAt DateTime?
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  id                  String         @id @default(uuid())
+  userId              String
+  user                User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform            CodingPlatform
+  username            String
+  solvedCount         Int            @default(0)
+  officialSolvedCount Int?
+  currentRating       Int?
+  ratingHistory       Json?
+  isVerified          Boolean        @default(false)
+  lastSyncedAt        DateTime?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
 
   @@unique([userId, platform])
   @@index([userId])

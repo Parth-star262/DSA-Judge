@@ -11,8 +11,26 @@ const AUTO_SYNC_PLATFORMS = new Set(['CODEFORCES', 'LEETCODE']);
 const countCodeforcesSolved = (submissions) => new Set(
   submissions
     .filter((submission) => submission.verdict === 'OK' && submission.problem)
-    .map((submission) => `${submission.problem.contestId || 'practice'}:${submission.problem.index || submission.problem.name}`)
+    // Practice and Gym problems can reuse indexes (for example, many different "A" problems).
+    // Use the full identity instead of collapsing all index-A practice solves together.
+    .map((submission) => JSON.stringify([
+      submission.problem.contestId || null,
+      submission.problem.problemsetName || null,
+      submission.problem.index || null,
+      submission.problem.name || null,
+    ]))
 ).size;
+
+const getCodeforcesProfileSolved = async (username) => {
+  const response = await axios.get(`https://codeforces.com/profile/${encodeURIComponent(username)}`, {
+    timeout: 10000,
+    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; DSA-Judge Platform Tracker)' },
+  });
+  const match = response.data.match(/(\d+)\s+problems\s*(?:<[^>]*>\s*)*solved/i);
+  return match ? Number(match[1]) : null;
+};
+
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const getLeetCodeSolved = async (username) => {
   try {
@@ -41,6 +59,24 @@ const getLeetCodeSolved = async (username) => {
   return solvedCount;
 };
 
+const getLeetCodeRatingHistory = async (username) => {
+  try {
+    const response = await axios.get(`https://leetcode-stats.tashif.codes/${encodeURIComponent(username)}/rating`, { timeout: 10000 });
+    const history = (response.data?.data?.history || [])
+      .map((item) => ({
+        date: new Date((item.timestamp || item.finishTimeInSeconds) * 1000).toISOString(),
+        rating: item.rating,
+        rank: item.rank || item.ranking,
+        contestName: item.contestName || item.contest?.title,
+      }))
+      .filter((item) => Number.isFinite(item.rating) && !Number.isNaN(new Date(item.date).getTime()));
+    const latest = history.at(-1);
+    return { ratingHistory: history, currentRating: latest?.rating || null };
+  } catch {
+    return {};
+  }
+};
+
 const startOfLocalDay = (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate());
 
 const daysBetween = (olderDate, newerDate) => {
@@ -52,6 +88,21 @@ const daysBetween = (olderDate, newerDate) => {
 const getDisplayCurrentStreak = (streak) => {
   if (!streak?.lastSolvedAt) return 0;
   return daysBetween(streak.lastSolvedAt, new Date()) <= 1 ? streak.currentStreak : 0;
+};
+
+const optionalUrl = (value) => {
+  if (value === undefined || value === null || value === '') return null;
+  try {
+    const url = new URL(String(value));
+    return ['http:', 'https:'].includes(url.protocol) ? url.toString() : null;
+  } catch {
+    return null;
+  }
+};
+
+const optionalAvatarUrl = (value) => {
+  if (typeof value === 'string' && /^data:image\/(png|jpe?g|webp);base64,/i.test(value) && value.length <= 1500000) return value;
+  return optionalUrl(value);
 };
 
 // GET /api/leaderboard/global
@@ -117,6 +168,9 @@ router.get('/users/:userId/profile', async (req, res) => {
         id: true,
         name: true,
         email: true,
+        avatarUrl: true,
+        githubUrl: true,
+        linkedinUrl: true,
         role: true,
         platformAccounts: {
           select: { platform: true, username: true, solvedCount: true, isVerified: true, lastSyncedAt: true },
@@ -143,6 +197,39 @@ router.get('/users/:userId/profile', async (req, res) => {
       ...user,
       streak: user.streak ? { ...user.streak, currentStreak: getDisplayCurrentStreak(user.streak) } : null,
     });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/profile/settings — editable public-profile details for the signed-in user
+router.get('/profile/settings', auth, async (req, res) => {
+  try {
+    const profile = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { name: true, email: true, avatarUrl: true, githubUrl: true, linkedinUrl: true },
+    });
+    res.json(profile);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PUT /api/profile/settings — save avatar and public social links (no third-party credentials)
+router.put('/profile/settings', auth, async (req, res) => {
+  try {
+    const avatarUrl = optionalAvatarUrl(req.body.avatarUrl);
+    const githubUrl = optionalUrl(req.body.githubUrl);
+    const linkedinUrl = optionalUrl(req.body.linkedinUrl);
+    if ((req.body.avatarUrl && !avatarUrl) || (req.body.githubUrl && !githubUrl) || (req.body.linkedinUrl && !linkedinUrl)) {
+      return res.status(400).json({ error: 'Use valid http or https URLs for photo and social links' });
+    }
+    const profile = await prisma.user.update({
+      where: { id: req.user.id },
+      data: { avatarUrl, githubUrl, linkedinUrl },
+      select: { name: true, email: true, avatarUrl: true, githubUrl: true, linkedinUrl: true },
+    });
+    res.json(profile);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -203,9 +290,10 @@ router.post('/platform-accounts/leetcode/refresh', auth, async (req, res) => {
     if (!account) return res.status(404).json({ error: 'Add a LeetCode username first' });
 
     const solvedCount = await getLeetCodeSolved(account.username);
+    const ratingData = await getLeetCodeRatingHistory(account.username);
     const updated = await prisma.platformAccount.update({
       where: { id: account.id },
-      data: { solvedCount, isVerified: true, lastSyncedAt: new Date() },
+      data: { solvedCount, isVerified: true, lastSyncedAt: new Date(), ...ratingData },
     });
     res.json(updated);
   } catch (err) {
@@ -228,9 +316,42 @@ router.post('/platform-accounts/codeforces/refresh', auth, async (req, res) => {
     });
     if (response.data?.status !== 'OK') return res.status(400).json({ error: 'Codeforces handle was not found' });
 
+    const apiSolvedCount = countCodeforcesSolved(response.data.result);
+    // The profile includes every accepted problem; keep it as the source of truth when
+    // the submissions endpoint omits older practice/Gym data.
+    let officialSolvedCount = null;
+    try { officialSolvedCount = await getCodeforcesProfileSolved(account.username); } catch { officialSolvedCount = null; }
+
+    // Codeforces allows one public API call every two seconds. Rating history is optional,
+    // so a failure here never prevents the solved total from refreshing.
+    let ratingData = {};
+    try {
+      await delay(2100);
+      const ratingResponse = await axios.get('https://codeforces.com/api/user.rating', {
+        params: { handle: account.username },
+        timeout: 10000,
+      });
+      const history = (ratingResponse.data?.result || []).map((item) => ({
+        date: new Date(item.ratingUpdateTimeSeconds * 1000).toISOString(),
+        rating: item.newRating,
+        rank: item.rank,
+        contestName: item.contestName,
+      }));
+      const latest = history.at(-1);
+      ratingData = { ratingHistory: history, currentRating: latest?.rating || null };
+    } catch {
+      ratingData = {};
+    }
+
     const updated = await prisma.platformAccount.update({
       where: { id: account.id },
-      data: { solvedCount: countCodeforcesSolved(response.data.result), isVerified: true, lastSyncedAt: new Date() },
+      data: {
+        solvedCount: Math.max(apiSolvedCount, officialSolvedCount || 0),
+        officialSolvedCount,
+        isVerified: true,
+        lastSyncedAt: new Date(),
+        ...ratingData,
+      },
     });
     res.json(updated);
   } catch (err) {
