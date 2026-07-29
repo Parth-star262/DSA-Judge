@@ -118,7 +118,9 @@ vector<int> twoSum(vector<int>& nums, int target) {
             data: { input: '6 15\n10 5 2 7 1 9' },
           },
           {
-            where: { input: '3 6\n-3 2 1', expectedOutput: '3' },
+            // Match the legacy input alone: earlier deployments may have
+            // stored whitespace differently in expectedOutput.
+            where: { input: '3 6\n-3 2 1' },
             data: { input: '3 0\n-3 2 1' },
           },
         ],
