@@ -18,4 +18,6 @@ RUN npx prisma generate
 ENV NODE_ENV=production
 EXPOSE 5001
 
-CMD ["node", "src/index.js"]
+# The database URL is available only at container runtime on Render. Seed before
+# starting the API so corrected built-in test data is applied on every deploy.
+CMD ["sh", "-c", "node prisma/seed.js && node src/index.js"]
