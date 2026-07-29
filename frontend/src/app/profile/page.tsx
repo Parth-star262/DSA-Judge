@@ -155,28 +155,31 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-12 md:py-20 relative">
+    <div className="max-w-[1440px] mx-auto px-4 sm:px-6 py-6 md:py-8 relative">
       <div className="absolute top-[-5%] right-[-5%] w-[400px] h-[400px] bg-indigo-600/10 rounded-full blur-[120px] pointer-events-none" />
-      
-      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-6 mb-12">
-        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 p-1 shadow-[0_0_30px_rgba(99,102,241,0.3)]">
-          <div className="w-full h-full rounded-full bg-[#0a0f1c] flex items-center justify-center border-4 border-transparent bg-clip-padding">
-            <span className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-purple-300">
-              {user.name.charAt(0).toUpperCase()}
-            </span>
+
+      <div className="grid grid-cols-1 xl:grid-cols-[280px_minmax(0,1fr)] gap-6 relative z-10">
+        <aside className="xl:sticky xl:top-6 self-start glass rounded-2xl border border-white/5 overflow-hidden bg-[#121317]">
+          <div className="p-6 text-center border-b border-white/5">
+            <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-orange-400 via-amber-400 to-emerald-400 p-1 shadow-[0_0_24px_rgba(245,158,11,0.2)]">
+              <div className="w-full h-full rounded-full bg-[#121317] flex items-center justify-center">
+                <span className="text-4xl font-black text-slate-100">{user.name.charAt(0).toUpperCase()}</span>
+              </div>
+            </div>
+            <h1 className="mt-4 text-xl font-extrabold text-white tracking-wide uppercase">{user.name}</h1>
+            <p className="mt-1 text-xs text-blue-400 font-semibold truncate">{user.email}</p>
+            <Link href="/problems"><button className="mt-5 w-full rounded-lg bg-white/[0.08] py-2.5 text-sm font-semibold text-orange-400 hover:bg-white/[0.12] transition">Solve a problem</button></Link>
           </div>
-        </div>
-        <div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">{user.name}</h1>
-          <p className="text-indigo-300 font-medium tracking-wide">{user.email}</p>
-        </div>
-      </motion.div>
+          <div className="p-3"><PlatformTracker /></div>
+        </aside>
+
+        <main className="min-w-0">
 
       <motion.div 
         variants={containerVariants} initial="hidden" animate="show"
-        className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 relative z-10"
+        className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5"
       >
-        <motion.div variants={itemVariants} className="glass rounded-2xl p-6 border border-emerald-500/20 shadow-[inset_0_0_20px_rgba(34,197,94,0.02)]">
+        <motion.div variants={itemVariants} className="glass rounded-xl p-5 border border-white/5 bg-[#16171b]">
           <div className="flex items-center justify-between pointer-events-none mb-4">
             <span className="text-emerald-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2">
               <CheckCircle2 size={16} /> Solved
@@ -188,7 +191,7 @@ export default function ProfilePage() {
           <div className="text-5xl font-black text-white">{stats.solved}</div>
         </motion.div>
 
-        <motion.div variants={itemVariants} className="glass rounded-2xl p-6 border border-blue-500/20 shadow-[inset_0_0_20px_rgba(59,130,246,0.02)]">
+        <motion.div variants={itemVariants} className="glass rounded-xl p-5 border border-white/5 bg-[#16171b]">
           <div className="flex items-center justify-between pointer-events-none mb-4">
             <span className="text-blue-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2">
               <CircleDashed size={16} /> Attempted
@@ -200,7 +203,7 @@ export default function ProfilePage() {
           <div className="text-5xl font-black text-white">{stats.attempted}</div>
         </motion.div>
 
-        <motion.div variants={itemVariants} className="glass rounded-2xl p-6 border border-amber-500/20 shadow-[inset_0_0_20px_rgba(245,158,11,0.02)]">
+        <motion.div variants={itemVariants} className="glass rounded-xl p-5 border border-white/5 bg-[#16171b]">
           <div className="flex items-center justify-between pointer-events-none mb-4">
             <span className="text-amber-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2">
               <RotateCcw size={16} /> Revisit
@@ -213,12 +216,12 @@ export default function ProfilePage() {
         </motion.div>
       </motion.div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-12 relative z-10">
+      <div className="grid grid-cols-1 2xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.85fr)] gap-5 mb-5">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="glass rounded-3xl overflow-hidden border border-white/5"
+          className="glass rounded-xl overflow-hidden border border-white/5 bg-[#16171b]"
         >
           <div className="px-6 py-5 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
             <h2 className="font-bold text-white tracking-wide text-lg flex items-center gap-2">
@@ -237,7 +240,7 @@ export default function ProfilePage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
-          className="glass rounded-3xl overflow-hidden border border-white/5"
+          className="glass rounded-xl overflow-hidden border border-white/5 bg-[#16171b]"
         >
           <div className="px-6 py-5 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
             <h2 className="font-bold text-white tracking-wide text-lg flex items-center gap-2">
@@ -257,7 +260,7 @@ export default function ProfilePage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="glass rounded-3xl overflow-hidden border border-white/5 mb-12 relative z-10"
+        className="glass rounded-xl overflow-hidden border border-white/5 bg-[#16171b] mb-5"
       >
         <div className="px-6 py-5 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
           <h2 className="font-bold text-white tracking-wide text-lg flex items-center gap-2">
@@ -270,13 +273,9 @@ export default function ProfilePage() {
         </div>
       </motion.div>
 
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="mb-12 relative z-10">
-        <PlatformTracker />
-      </motion.div>
-
       <motion.div 
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-        className="glass rounded-3xl overflow-hidden border border-white/5 relative z-10"
+        className="glass rounded-xl overflow-hidden border border-white/5 bg-[#16171b]"
       >
         <div className="px-6 py-5 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
           <h2 className="font-bold text-white tracking-wide text-lg flex items-center gap-2">
@@ -326,6 +325,8 @@ export default function ProfilePage() {
 
       <div className="mt-12 relative z-10">
         <SubmissionDiffViewer submissions={historyItems} />
+      </div>
+        </main>
       </div>
     </div>
   );

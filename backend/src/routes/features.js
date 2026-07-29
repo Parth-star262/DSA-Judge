@@ -222,7 +222,8 @@ router.post('/platform-accounts/codeforces/refresh', auth, async (req, res) => {
     if (!account) return res.status(404).json({ error: 'Add a Codeforces handle first' });
 
     const response = await axios.get('https://codeforces.com/api/user.status', {
-      params: { handle: account.username },
+      // Codeforces returns only a limited recent page unless count is specified.
+      params: { handle: account.username, from: 1, count: 10000 },
       timeout: 10000,
     });
     if (response.data?.status !== 'OK') return res.status(400).json({ error: 'Codeforces handle was not found' });
