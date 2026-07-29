@@ -6,12 +6,40 @@ const { auth } = require('../middleware/auth');
 const router = express.Router();
 
 const PLATFORM_NAMES = new Set(['CODEFORCES', 'LEETCODE', 'CODECHEF', 'HACKERRANK', 'GEEKSFORGEEKS', 'ATCODER']);
+const AUTO_SYNC_PLATFORMS = new Set(['CODEFORCES', 'LEETCODE']);
 
 const countCodeforcesSolved = (submissions) => new Set(
   submissions
     .filter((submission) => submission.verdict === 'OK' && submission.problem)
     .map((submission) => `${submission.problem.contestId || 'practice'}:${submission.problem.index || submission.problem.name}`)
 ).size;
+
+const getLeetCodeSolved = async (username) => {
+  try {
+    const response = await axios.post('https://leetcode.com/graphql', {
+      query: `query userProfile($username: String!) {
+        matchedUser(username: $username) {
+          submitStats: submitStatsGlobal { acSubmissionNum { difficulty count } }
+        }
+      }`,
+      variables: { username },
+    }, {
+      timeout: 10000,
+      headers: { 'Content-Type': 'application/json', 'User-Agent': 'DSA-Judge Platform Tracker' },
+    });
+
+    const stats = response.data?.data?.matchedUser?.submitStats?.acSubmissionNum;
+    const allSolved = stats?.find((stat) => stat.difficulty === 'All');
+    if (Number.isInteger(allSolved?.count)) return allSolved.count;
+  } catch {
+    // LeetCode occasionally blocks cloud-server requests; try the public stats mirror below.
+  }
+
+  const fallback = await axios.get(`https://leetcode-stats.tashif.codes/${encodeURIComponent(username)}`, { timeout: 10000 });
+  const solvedCount = fallback.data?.data?.totalSolved;
+  if (!Number.isInteger(solvedCount)) throw new Error('LeetCode handle was not found');
+  return solvedCount;
+};
 
 const startOfLocalDay = (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate());
 
@@ -142,7 +170,7 @@ router.put('/platform-accounts', auth, async (req, res) => {
 
     if (!PLATFORM_NAMES.has(platform)) return res.status(400).json({ error: 'Unsupported platform' });
     if (!username || username.length > 100) return res.status(400).json({ error: 'Enter a valid public username' });
-    if (platform !== 'CODEFORCES' && (!Number.isInteger(solvedCount) || solvedCount < 0)) {
+    if (!AUTO_SYNC_PLATFORMS.has(platform) && (!Number.isInteger(solvedCount) || solvedCount < 0)) {
       return res.status(400).json({ error: 'Enter a valid solved-problem total' });
     }
 
@@ -152,17 +180,36 @@ router.put('/platform-accounts', auth, async (req, res) => {
         userId: req.user.id,
         platform,
         username,
-        solvedCount: platform === 'CODEFORCES' ? 0 : solvedCount,
+        solvedCount: AUTO_SYNC_PLATFORMS.has(platform) ? 0 : solvedCount,
         isVerified: false,
       },
       update: {
         username,
-        ...(platform === 'CODEFORCES' ? {} : { solvedCount, isVerified: false }),
+        ...(AUTO_SYNC_PLATFORMS.has(platform) ? {} : { solvedCount, isVerified: false }),
       },
     });
     res.status(201).json(account);
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/platform-accounts/leetcode/refresh — free public-profile sync
+router.post('/platform-accounts/leetcode/refresh', auth, async (req, res) => {
+  try {
+    const account = await prisma.platformAccount.findUnique({
+      where: { userId_platform: { userId: req.user.id, platform: 'LEETCODE' } },
+    });
+    if (!account) return res.status(404).json({ error: 'Add a LeetCode username first' });
+
+    const solvedCount = await getLeetCodeSolved(account.username);
+    const updated = await prisma.platformAccount.update({
+      where: { id: account.id },
+      data: { solvedCount, isVerified: true, lastSyncedAt: new Date() },
+    });
+    res.json(updated);
+  } catch (err) {
+    res.status(502).json({ error: 'Unable to refresh LeetCode right now. Check the public username and try again.' });
   }
 });
 
