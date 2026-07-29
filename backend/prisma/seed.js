@@ -107,7 +107,23 @@ vector<int> twoSum(vector<int>& nums, int target) {
   // Sample Problem 2: Longest Subarray with Sum K
   const longestSubarray = await prisma.problem.upsert({
     where: { slug: 'longest-subarray-sum-k' },
-    update: {},
+    // Keep already-deployed seed data in sync with corrections below. Upsert's
+    // create branch only runs once, so without this an old invalid test case
+    // would continue to judge correct submissions as partial.
+    update: {
+      testCases: {
+        updateMany: [
+          {
+            where: { input: '9 15\n10 5 2 7 1 9', expectedOutput: '4' },
+            data: { input: '6 15\n10 5 2 7 1 9' },
+          },
+          {
+            where: { input: '3 6\n-3 2 1', expectedOutput: '3' },
+            data: { input: '3 0\n-3 2 1' },
+          },
+        ],
+      },
+    },
     create: {
       slug: 'longest-subarray-sum-k',
       title: 'Longest Subarray with Sum K',
@@ -120,8 +136,8 @@ vector<int> twoSum(vector<int>& nums, int target) {
       outputFormat: `A single integer — length of the longest subarray`,
       testCases: {
         create: [
-          { input: '9 15\n10 5 2 7 1 9', expectedOutput: '4', isSample: true, points: 1 },
-          { input: '3 6\n-3 2 1', expectedOutput: '3', isSample: true, points: 1 },
+          { input: '6 15\n10 5 2 7 1 9', expectedOutput: '4', isSample: true, points: 1 },
+          { input: '3 0\n-3 2 1', expectedOutput: '3', isSample: true, points: 1 },
           { input: '6 3\n1 2 3 1 1 1', expectedOutput: '3', isSample: false, points: 1 },
           { input: '1 5\n5', expectedOutput: '1', isSample: false, points: 1 },
         ],
