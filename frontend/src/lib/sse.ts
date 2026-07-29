@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api').replace(/\/$/, '');
 
 export type SSEEvent =
   | { type: 'queued'; submissionId: string }
@@ -38,7 +38,7 @@ export function streamSubmission(
   token: string,
   onEvent: (event: SSEEvent) => void
 ): () => void {
-  const url = `${API_URL}/api/submissions/${submissionId}/stream`;
+  const url = `${API_BASE}/submissions/${submissionId}/stream`;
 
   // EventSource doesn't support custom headers â€” use fetch + ReadableStream instead
   const controller = new AbortController();

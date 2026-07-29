@@ -16,6 +16,7 @@ import NextProblemCard from '@/components/NextProblemCard';
 import { Play, Send, BookOpen, Lightbulb, Lock, ChevronLeft, Tag, GripVertical } from 'lucide-react';
 import Link from 'next/link';
 import axios from 'axios';
+import { streamSubmission, type JudgeResult } from '@/lib/sse';
 
 const STARTERS: Record<string, Record<Language, string>> = {
   'two-sum': {
@@ -148,6 +149,7 @@ export default function ProblemPage() {
   const [submitResult, setSubmitResult] = useState<SubmissionResult | null>(null);
   const [runLoading, setRunLoading] = useState(false);
   const [submitLoading, setSubmitLoading] = useState(false);
+  const [streamStatus, setStreamStatus] = useState<'queued' | 'judging' | 'complete' | null>(null);
   const [activeTestCase, setActiveTestCase] = useState(0);
   const [customInput, setCustomInput] = useState('');
   const [customExpectedOutput, setCustomExpectedOutput] = useState('');
@@ -332,20 +334,117 @@ export default function ProblemPage() {
     } finally { setRunLoading(false); }
   }
 
+  const pollSubmissionResult = async (submissionId: string) => {
+    const maxWaitMs = 5 * 60 * 1000;
+    const startedAt = Date.now();
+
+    while (Date.now() - startedAt < maxWaitMs) {
+      const res = await api.get(`/submissions/${submissionId}`);
+      if (res.data?.verdict && res.data.verdict !== 'PENDING') {
+        return {
+          verdict: res.data.verdict,
+          score: res.data.score ?? 0,
+          passedCases: res.data.passedCases ?? 0,
+          totalCases: res.data.totalCases ?? 0,
+          executionTime: res.data.executionTime ?? 0,
+          complexityEstimate: res.data.complexityEstimate ?? undefined,
+        } satisfies SubmissionResult;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
+
+    throw new Error('Judging is taking too long. Please check submission history shortly.');
+  };
+
+  const waitForSubmissionResult = async (submissionId: string, token: string) => {
+    try {
+      return await new Promise<SubmissionResult>((resolve, reject) => {
+        const cleanup = streamSubmission(submissionId, token, (event) => {
+          if (event.type === 'queued') {
+            setStreamStatus('queued');
+            return;
+          }
+
+          if (event.type === 'complete') {
+            const result = (event.result || {}) as JudgeResult;
+            resolve({
+              verdict: result.verdict,
+              score: result.score ?? 0,
+              passedCases: result.passedCases ?? 0,
+              totalCases: result.totalCases ?? 0,
+              executionTime: result.executionTime,
+              complexityEstimate: result.complexityEstimate,
+              optimalComplexity: result.optimalComplexity,
+              spaceComplexityEstimate: result.spaceComplexityEstimate,
+              optimalSpaceComplexity: result.optimalSpaceComplexity,
+              firstFailedCase: result.firstFailedCase,
+            });
+            cleanup();
+            return;
+          }
+
+          if (event.type === 'error' || event.type === 'timeout') {
+            cleanup();
+            reject(new Error(event.type === 'timeout' ? event.message : event.error));
+          }
+        });
+      });
+    } catch {
+      return pollSubmissionResult(submissionId);
+    }
+  };
+
   async function handleSubmit() {
     if (!user) { alert('Please login to submit'); return; }
-    setSubmitLoading(true); setSubmitResult(null);
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    if (!token) { alert('Please login to submit'); return; }
+
+    setSubmitLoading(true);
+    setSubmitResult(null);
+    setStreamStatus('queued');
+    setRunResult(null);
+
     try {
       const res = await api.post('/submissions', { problemSlug: slug, code, language });
-      setSubmitResult(res.data);
-      setRunResult(null);
+      const submissionId = res.data?.submissionId as string | undefined;
+      if (!submissionId) {
+        throw new Error('Submission did not return an id');
+      }
+
+      setStreamStatus('judging');
+      const finalResult = await waitForSubmissionResult(submissionId, token);
+      setSubmitResult(finalResult);
+      setStreamStatus('complete');
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
-        setSubmitResult({ verdict: 'RUNTIME_ERROR', score: 0, passedCases: 0, totalCases: 0, stderr: error.response?.data?.error || error.message });
+        setSubmitResult({
+          verdict: 'RUNTIME_ERROR',
+          score: 0,
+          passedCases: 0,
+          totalCases: 0,
+          stderr: error.response?.data?.error || error.message,
+        });
+      } else if (error instanceof Error) {
+        setSubmitResult({
+          verdict: 'RUNTIME_ERROR',
+          score: 0,
+          passedCases: 0,
+          totalCases: 0,
+          stderr: error.message,
+        });
       } else {
-        setSubmitResult({ verdict: 'RUNTIME_ERROR', score: 0, passedCases: 0, totalCases: 0, stderr: 'Submit failed' });
+        setSubmitResult({
+          verdict: 'RUNTIME_ERROR',
+          score: 0,
+          passedCases: 0,
+          totalCases: 0,
+          stderr: 'Submit failed',
+        });
       }
-    } finally { setSubmitLoading(false); }
+      setStreamStatus(null);
+    } finally {
+      setSubmitLoading(false);
+    }
   }
 
   const handleEnroll = async () => {
@@ -790,7 +889,15 @@ export default function ProblemPage() {
               {/* Verdict Panel */}
               {(runResult || submitResult || runLoading || submitLoading) && (
                 <div className="flex-height" style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                  <VerdictPanel result={submitResult || runResult} loading={runLoading || submitLoading} />
+                  <VerdictPanel
+                    result={submitResult || runResult}
+                    loading={runLoading || submitLoading}
+                    streamStatus={streamStatus}
+                    problemSlug={slug}
+                    code={code}
+                    language={language}
+                    token={typeof window !== 'undefined' ? localStorage.getItem('token') || undefined : undefined}
+                  />
                 </div>
               )}
 
