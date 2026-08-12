@@ -8,7 +8,6 @@ import { motion } from 'framer-motion';
 import ActivityHeatmap from '@/components/ActivityHeatmap';
 import BadgeGallery from '@/components/BadgeGallery';
 import TopicRadarChart from '@/components/TopicRadarChart';
-import SubmissionDiffViewer from '@/components/SubmissionDiffViewer';
 import PlatformTracker from '@/components/PlatformTracker';
 import PlatformRankChart from '@/components/PlatformRankChart';
 
@@ -321,59 +320,6 @@ export default function ProfilePage() {
         <PlatformRankChart />
       </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-        className="glass rounded-xl overflow-hidden border border-white/5 bg-[#16171b]"
-      >
-        <div className="px-6 py-5 border-b border-white/5 bg-white/[0.02] flex items-center justify-between">
-          <h2 className="font-bold text-white tracking-wide text-lg flex items-center gap-2">
-            <Clock3 size={18} className="text-indigo-400" /> Recent Submissions
-          </h2>
-        </div>
-
-        {historyLoading ? (
-          <div className="p-8 flex justify-center"><div className="w-6 h-6 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" /></div>
-        ) : historyItems.length === 0 ? (
-          <div className="p-16 text-center">
-            <Code2 size={48} className="mx-auto text-slate-700 mb-4" />
-            <p className="text-slate-400 text-lg">No submissions yet.</p>
-            <p className="text-slate-500 mt-2 text-sm">Start your journey by solving your first problem!</p>
-            <Link href="/problems">
-              <button className="mt-6 px-6 py-2 rounded-full border border-indigo-500/30 text-indigo-400 font-semibold hover:bg-indigo-500/10 transition">
-                Explore Problems
-              </button>
-            </Link>
-          </div>
-        ) : (
-          <div className="divide-y divide-white/5">
-            {historyItems.map((item) => (
-              <div key={item.id} className="grid grid-cols-1 md:grid-cols-[1fr_auto_auto_auto] gap-4 md:gap-8 items-center p-6 hover:bg-white/[0.02] transition-colors group">
-                <Link href={`/problems/${item.problem.slug}`} className="text-slate-200 font-semibold group-hover:text-indigo-300 transition-colors text-lg truncate">
-                  {item.problem.title}
-                </Link>
-                
-                <div className="flex md:block items-center justify-between">
-                  <span className={`px-3 py-1 text-xs font-bold tracking-widest rounded-md border ${verdictColor(item.verdict)}`}>
-                    {item.verdict.replace('_', ' ')}
-                  </span>
-                </div>
-                
-                <div className="text-indigo-300 font-mono font-bold tracking-wider text-right">
-                  {item.score}%
-                </div>
-                
-                <div className="text-slate-500 text-sm font-medium flex items-center gap-2 justify-end">
-                  {new Date(item.submittedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </motion.div>
-
-      <div className="mt-12 relative z-10">
-        <SubmissionDiffViewer submissions={historyItems} />
-      </div>
         </main>
       </div>
     </div>

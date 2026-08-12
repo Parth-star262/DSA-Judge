@@ -22,7 +22,7 @@ function getColor(count: number): string {
 }
 
 export default function ActivityHeatmap({ data }: ActivityHeatmapProps) {
-  const { months, totalSolves, activeDays } = useMemo(() => {
+  const { months, totalSubmissions, activeDays } = useMemo(() => {
     const today = new Date();
     const dateMap: Record<string, number> = {};
     for (const day of data) dateMap[day.date] = day.count;
@@ -54,7 +54,7 @@ export default function ActivityHeatmap({ data }: ActivityHeatmapProps) {
 
     return {
       months,
-      totalSolves: data.reduce((sum, day) => sum + day.count, 0),
+      totalSubmissions: data.reduce((sum, day) => sum + day.count, 0),
       activeDays: data.filter((day) => day.count > 0).length,
     };
   }, [data]);
@@ -67,7 +67,7 @@ export default function ActivityHeatmap({ data }: ActivityHeatmapProps) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
         <h3 style={{ fontSize: 15, fontWeight: 700, color: '#e5e7eb', margin: 0 }}>Activity</h3>
         <div style={{ display: 'flex', gap: 16, fontSize: 12, color: 'var(--text-muted)' }}>
-          <span>{totalSolves} total solves</span>
+          <span>{totalSubmissions} total submissions</span>
           <span>{activeDays} active days</span>
         </div>
       </div>
@@ -80,7 +80,7 @@ export default function ActivityHeatmap({ data }: ActivityHeatmapProps) {
                 {cells.map((cell, index) => cell ? (
                   <motion.div
                     key={cell.date}
-                    title={`${cell.date}: ${cell.count} solve${cell.count !== 1 ? 's' : ''}`}
+                    title={`${cell.date}: ${cell.count} submission${cell.count !== 1 ? 's' : ''}`}
                     whileHover={{ scale: 1.35 }}
                     style={{ width: CELL, height: CELL, borderRadius: 2, background: getColor(cell.count), cursor: cell.count > 0 ? 'pointer' : 'default' }}
                   />

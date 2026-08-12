@@ -17,7 +17,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 // --- Types ---
 type Topic = { id: string; name: string };
-type TopicWithProblems = Topic & { problems: { slug: string; title: string }[] };
+type TopicWithProblems = Topic & {
+  problems: {
+    slug: string;
+    title: string;
+    difficulty: 'EASY' | 'MEDIUM' | 'HARD';
+    isPremium?: boolean;
+  }[];
+};
+type AdminProblem = { slug: string; title: string; topicName: string; topicId: string; difficulty: 'EASY' | 'MEDIUM' | 'HARD' };
+type CompanyTag = { companyName: string };
+type ApiError = { response?: { data?: { error?: string } } };
 type TestCase = { input: string; expectedOutput: string; explanation: string; isSample: boolean; points: number };
 type Hint = { level: number; content: string };
 type ScalingInput = { n: number; input: string };
@@ -48,7 +58,7 @@ const blankForm = {
 export default function ProblemsManagement() {
   const [view, setView] = useState<'LIST' | 'EDIT'>('LIST');
   const [topics, setTopics] = useState<Topic[]>([]);
-  const [problems, setProblems] = useState<any[]>([]);
+  const [problems, setProblems] = useState<AdminProblem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   
@@ -105,7 +115,7 @@ export default function ProblemsManagement() {
         judgeConfig: p.judgeConfig ? JSON.stringify(p.judgeConfig, null, 2) : '',
         editorialContent: p.editorial?.content || '',
         editorialVideoUrl: p.editorial?.videoUrl || '',
-        companyTags: (p.companyTags || []).map((tag: any) => tag.companyName).join(', '),
+        companyTags: ((p.companyTags || []) as CompanyTag[]).map((tag) => tag.companyName).join(', '),
       });
       setTestCases(p.testCases || []);
       setHints(p.hints || []);
@@ -146,8 +156,9 @@ export default function ProblemsManagement() {
         setView('LIST');
         fetchProblems();
       }, 1000);
-    } catch (err: any) {
-      setMessage(err.response?.data?.error || 'Failed to save problem');
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      setMessage(apiError.response?.data?.error || 'Failed to save problem');
     } finally {
       setSaving(false);
     }

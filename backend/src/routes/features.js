@@ -750,7 +750,7 @@ router.get('/analytics/dashboard', auth, async (req, res) => {
   }
 });
 
-// GET /api/users/:userId/activity — daily solve heatmap (Phase 4.1)
+// GET /api/users/:userId/activity — daily submission heatmap across the user journey
 router.get('/users/:userId/activity', async (req, res) => {
   try {
     const user = await prisma.user.findUnique({ where: { id: req.params.userId }, select: { id: true } });
@@ -763,25 +763,20 @@ router.get('/users/:userId/activity', async (req, res) => {
       where: {
         userId: req.params.userId,
         submittedAt: { gte: oneYearAgo },
-        verdict: 'ACCEPTED',
       },
-      select: { submittedAt: true, problemId: true },
+      select: { submittedAt: true, verdict: true, score: true },
     });
 
-    // Dedupe by (date, problemId) — only count unique solves per day
-    const seen = new Set();
     const dailyCounts = {};
-
     for (const sub of submissions) {
-      const dateStr = sub.submittedAt.toISOString().slice(0, 10); // YYYY-MM-DD
-      const key = `${dateStr}:${sub.problemId}`;
-      if (!seen.has(key)) {
-        seen.add(key);
-        dailyCounts[dateStr] = (dailyCounts[dateStr] || 0) + 1;
-      }
+      const dateStr = sub.submittedAt.toISOString().slice(0, 10);
+      dailyCounts[dateStr] = (dailyCounts[dateStr] || 0) + 1;
     }
 
-    const activity = Object.entries(dailyCounts).map(([date, count]) => ({ date, count }));
+    const activity = Object.entries(dailyCounts)
+      .map(([date, count]) => ({ date, count: Number(count) }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+
     res.json(activity);
   } catch (err) {
     res.status(500).json({ error: err.message });
