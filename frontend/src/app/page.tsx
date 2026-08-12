@@ -1,357 +1,383 @@
 'use client';
 
+import { FormEvent, useMemo, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
-  ArrowUpRight,
-  ArrowRight,
-  BarChart3,
-  Bot,
-  Brain,
-  Briefcase,
-  Code2,
-  CodeXml,
-  Cpu,
-  Mail,
-  MapPin,
-  Play,
-  Rocket,
-  School,
-  Server,
-  Sparkles,
-  Terminal,
-  Trophy,
+	ArrowRight,
+	ArrowUpRight,
+	Bot,
+	Brain,
+	ChevronDown,
+	Code2,
+	Gauge,
+	GraduationCap,
+	Lightbulb,
+	Link2,
+	Mail,
+	MapPin,
+	Sparkles,
+	Terminal,
 } from 'lucide-react';
 
-const primarySkills = [
-  'JavaScript',
-  'TypeScript',
-  'React',
-  'Next.js',
-  'Node.js',
-  'Express',
-  'Prisma',
-  'PostgreSQL',
-  'Tailwind CSS',
-  'Docker',
-  'Redis',
-  'GitHub Actions',
+const launchUrl = 'https://dsa-judge.vercel.app/';
+const resumeUrl = '/resume';
+
+const techStack = [
+	{ name: 'JavaScript', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg' },
+	{ name: 'TypeScript', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg' },
+	{ name: 'React', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg' },
+	{ name: 'Next.js', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nextjs/nextjs-original.svg' },
+	{ name: 'Node.js', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nodejs/nodejs-original.svg' },
+	{ name: 'Express', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/express/express-original.svg' },
+	{ name: 'PostgreSQL', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/postgresql/postgresql-original.svg' },
+	{ name: 'Prisma', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/prisma/prisma-original.svg' },
+	{ name: 'Docker', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/docker/docker-original.svg' },
+	{ name: 'Redis', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/redis/redis-original.svg' },
+	{ name: 'Tailwind', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/tailwindcss/tailwindcss-original.svg' },
 ];
 
-const workingSkills = ['C++', 'Python', 'Jest', 'Monaco Editor', 'Render', 'Vercel'];
-
-const exploringSkills = ['LLM Integrations', 'Agent Workflows', 'System Design', 'Performance Optimization'];
-
-const projectTech = ['Next.js', 'TypeScript', 'Express', 'Prisma', 'PostgreSQL', 'Redis', 'Docker', 'AI APIs'];
-
-const dsaFeatures = [
-  {
-    title: 'Real code execution',
-    desc: 'Multi-language judging with fast verdict feedback.',
-    icon: Terminal,
-  },
-  {
-    title: 'AI mock interviews',
-    desc: 'Practice DSA interview rounds with AI guidance.',
-    icon: Bot,
-  },
-  {
-    title: 'AI code review',
-    desc: 'Get hints and complexity feedback on submissions.',
-    icon: Sparkles,
-  },
-  {
-    title: 'Performance analytics',
-    desc: 'Track streaks, activity, and learning consistency.',
-    icon: BarChart3,
-  },
+const projectFeatures = [
+	{ title: 'Real Code Execution', desc: 'Run C++, Java, Python, and JavaScript with strict test verdicts.', icon: Terminal },
+	{ title: 'AI Mock Interviews', desc: 'Practice DSA interview rounds with adaptive AI prompts.', icon: Bot },
+	{ title: 'AI Code Review', desc: 'Get complexity insight and cleaner approach suggestions.', icon: Sparkles },
+	{ title: 'Intelligent Hints', desc: 'Request targeted support while staying in the solving flow.', icon: Lightbulb },
+	{ title: 'Performance Analytics', desc: 'Track submissions, progress, and coding consistency over time.', icon: Gauge },
 ];
 
-const highlights = [
-  { label: 'HackOut 25', value: 'Hackathon participant building production-facing ideas', icon: Trophy },
-  { label: '500+ DSA Problems', value: 'Consistent problem-solving practice across platforms', icon: Brain },
-  { label: 'IIIT Vadodara', value: 'B.Tech CSE (2024-2028) with focus on practical software', icon: School },
-];
-
-const involvement = [
-  'Finance Club member at IIIT Vadodara',
-  'E-Cell involvement with startup and product-building activities',
-];
-
-const codingProfiles = [
-  { name: 'GitHub', href: 'https://github.com/Parth-star262' },
-  { name: 'LinkedIn', href: 'https://linkedin.com/in/parth-hada' },
+const faqs = [
+	{
+		q: 'What are you focused on currently?',
+		a: 'I am focused on full-stack product development, AI-assisted workflows, and improving my systems thinking through practical builds.',
+	},
+	{
+		q: 'What kind of opportunities are you open to?',
+		a: 'I am open to software engineering internships, collaboration projects, and mentorship-oriented developer roles.',
+	},
+	{
+		q: 'How can I evaluate your work quickly?',
+		a: 'Start with DSA-Judge. It is my flagship public project and shows product, backend, and engineering depth in one place.',
+	},
+	{
+		q: 'How should I contact you?',
+		a: 'Email is best for first contact. You can also connect with me on GitHub and LinkedIn from the links below.',
+	},
 ];
 
 const fadeUp = {
-  hidden: { opacity: 0, y: 18 },
-  visible: { opacity: 1, y: 0 },
+	hidden: { opacity: 0, y: 22 },
+	visible: { opacity: 1, y: 0 },
 };
 
 export default function PortfolioHomePage() {
-  return (
-    <div className="portfolio-shell min-h-screen overflow-hidden bg-[#070c18] text-[#eef3ff]">
-      <section id="home" className="relative px-4 pb-20 pt-16 sm:px-6 md:pt-20">
-        <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_12%_22%,rgba(27,127,255,0.22),transparent_32%),radial-gradient(circle_at_85%_16%,rgba(36,196,146,0.2),transparent_28%),radial-gradient(circle_at_78%_78%,rgba(249,115,22,0.12),transparent_30%)]" />
-        <div className="absolute inset-0 opacity-30 [background:linear-gradient(rgba(130,149,187,0.16)_1px,transparent_1px),linear-gradient(90deg,rgba(130,149,187,0.16)_1px,transparent_1px)] [background-size:48px_48px]" />
-        <div className="relative mx-auto grid min-h-[calc(100vh-76px)] max-w-7xl items-center gap-12 lg:grid-cols-[1.08fr_0.92fr]">
-          <motion.div initial="hidden" animate="visible" variants={fadeUp} transition={{ duration: 0.45 }} className="max-w-3xl">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/6 px-3 py-1 text-xs font-semibold text-slate-200 shadow-sm backdrop-blur">
-              <span className="h-2 w-2 rounded-full bg-emerald-400" />
-              Computer Science Student | Full-Stack & AI Developer
-            </div>
-            <h1 className="text-5xl font-black leading-[0.98] tracking-tight text-white sm:text-6xl md:text-7xl">
-              Parth Hada
-            </h1>
-            <p className="mt-5 max-w-2xl text-xl font-semibold text-[#c9d4ea] sm:text-2xl">
-              Turning ideas into intelligent, practical software.
-            </p>
-            <p className="mt-4 max-w-2xl text-base leading-7 text-[#9aa8c4]">
-              I&apos;m Parth, a CSE student at IIIT Vadodara passionate about building full-stack applications, AI-powered products, and solving real-world problems through software.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <a href="#projects" className="btn-primary rounded-lg px-6 py-3">
-                <span>View My Projects</span>
-                <ArrowRight size={18} />
-              </a>
-              <Link href="/problems" className="btn-ghost rounded-lg border-white/20 bg-white/7 px-6 py-3 text-white hover:bg-white/12">
-                <Play size={18} />
-                <span>Launch DSA Judge</span>
-              </Link>
-              <a href="mailto:202451124@iiitvadodara.ac.in?subject=Resume%20Request%20from%20Portfolio" className="btn-ghost rounded-lg border-white/20 bg-transparent px-6 py-3 text-white/90 hover:bg-white/12">
-                <Briefcase size={18} />
-                <span>Request Resume</span>
-              </a>
-            </div>
-            <div className="mt-7 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-300">
-              <MapPin size={14} />
-              Gandhinagar, Gujarat
-            </div>
-          </motion.div>
+	const [formName, setFormName] = useState('');
+	const [formEmail, setFormEmail] = useState('');
+	const [formMessage, setFormMessage] = useState('');
 
-          <motion.div
-            initial={{ opacity: 0, y: 24, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ duration: 0.55, delay: 0.1 }}
-            className="relative grid gap-4"
-          >
-            <div className="rounded-2xl border border-white/10 bg-[#0f1729]/92 p-4 shadow-[0_30px_80px_rgba(1,6,20,0.5)]">
-              <div className="rounded-xl border border-white/10 bg-[#101b31] p-5">
-                <div className="mb-4 flex items-center justify-between">
-                  <span className="text-xs uppercase tracking-[0.18em] text-cyan-200/80">Developer Identity</span>
-                  <Cpu size={16} className="text-cyan-300" />
-                </div>
-                <div className="flex items-center gap-4 rounded-lg border border-white/10 bg-[#0a1326] p-4">
-                  <img
-                    src="https://avatars.githubusercontent.com/Parth-star262"
-                    alt="Parth Hada"
-                    className="h-20 w-20 rounded-xl border border-white/15 object-cover"
-                  />
-                  <div>
-                    <div className="text-lg font-black text-white">Parth Hada</div>
-                    <div className="text-sm text-slate-300">Computer Science Student</div>
-                    <div className="mt-1 text-xs text-slate-400">Building software with full-stack + AI systems</div>
-                  </div>
-                </div>
-                <div className="mt-4 rounded-lg border border-white/10 bg-[#0a1326] p-4 font-mono text-sm leading-7 text-slate-300">
-                  <p><span className="text-cyan-300">const</span> builder = {'{'}</p>
-                  <p className="pl-4">name: <span className="text-emerald-300">'Parth'</span>,</p>
-                  <p className="pl-4">focus: [<span className="text-amber-300">'full-stack'</span>, <span className="text-amber-300">'ai'</span>],</p>
-                  <p className="pl-4">mindset: <span className="text-violet-300">'build real things'</span>,</p>
-                  <p>{'}'}</p>
-                </div>
-              </div>
-            </div>
+	const mailtoHref = useMemo(() => {
+		const subject = encodeURIComponent(`Portfolio Message from ${formName || 'Visitor'}`);
+		const body = encodeURIComponent(
+			`Name: ${formName || ''}\nEmail: ${formEmail || ''}\n\nMessage:\n${formMessage || ''}`,
+		);
+		return `mailto:202451124@iiitvadodara.ac.in?subject=${subject}&body=${body}`;
+	}, [formEmail, formMessage, formName]);
 
-            <div className="grid gap-3 sm:grid-cols-3">
-              {highlights.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <div key={item.label} className="rounded-xl border border-white/10 bg-white/6 p-4 backdrop-blur">
-                    <Icon size={16} className="text-cyan-300" />
-                    <div className="mt-2 text-sm font-black text-white">{item.label}</div>
-                    <div className="mt-1 text-xs leading-5 text-slate-300">{item.value}</div>
-                  </div>
-                );
-              })}
-            </div>
-          </motion.div>
-        </div>
-      </section>
+	const submitContact = (event: FormEvent<HTMLFormElement>) => {
+		event.preventDefault();
+		window.location.href = mailtoHref;
+	};
 
-      <motion.section id="about" initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.3 }} variants={fadeUp} className="border-y border-white/10 bg-[#0b1428] px-4 py-20 sm:px-6">
-        <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[0.7fr_1.3fr]">
-          <div>
-            <p className="text-sm font-bold uppercase tracking-[0.18em] text-slate-300">About</p>
-            <h2 className="mt-3 text-3xl font-black text-white">Serious about software, curious about systems.</h2>
-          </div>
-          <p className="text-lg leading-8 text-[#b3c1db]">
-            I enjoy building products end to end, from clean interfaces to reliable backend services. My current focus is full-stack engineering, AI-assisted workflows, and writing software that is useful in the real world. DSA-Judge is the project that best reflects this approach.
-          </p>
-        </div>
-      </motion.section>
+	return (
+		<div className="portfolio-shell min-h-screen overflow-hidden bg-[#050608] text-[#eef1f6]">
+			<div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(circle_at_14%_16%,rgba(106,120,156,0.15),transparent_34%),radial-gradient(circle_at_88%_82%,rgba(131,107,82,0.12),transparent_30%)]" />
 
-      <section id="skills" className="bg-[#070c18] px-4 py-20 sm:px-6">
-        <div className="mx-auto max-w-7xl">
-          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
-            <div>
-              <p className="text-sm font-bold uppercase tracking-[0.18em] text-slate-300">Skills</p>
-              <h2 className="mt-3 text-3xl font-black text-white">Technical stack and growth areas.</h2>
-            </div>
-            <p className="max-w-xl text-sm leading-6 text-[#9aa8c4]">
-              Balanced between technologies I actively use, technologies I am improving, and areas I am exploring next.
-            </p>
-          </div>
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} className="mt-8 grid gap-4 lg:grid-cols-3">
-            {[{ title: 'Strong', items: primarySkills }, { title: 'Working With', items: workingSkills }, { title: 'Exploring', items: exploringSkills }].map((group, groupIndex) => (
-              <motion.div key={group.title} variants={fadeUp} transition={{ duration: 0.28, delay: groupIndex * 0.06 }} className="rounded-xl border border-white/10 bg-white/6 p-5 backdrop-blur">
-                <h3 className="text-lg font-black text-white">{group.title}</h3>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {group.items.map((skill) => (
-                    <span key={skill} className="rounded-md border border-white/10 bg-[#0b1428] px-3 py-1 text-xs font-semibold text-slate-200">{skill}</span>
-                  ))}
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
+			<section id="home" className="relative px-4 pb-24 pt-16 sm:px-6 md:pt-20">
+				<div className="mx-auto grid min-h-[calc(100vh-76px)] max-w-7xl items-center gap-12 lg:grid-cols-[0.9fr_1.2fr_0.9fr]">
+					<motion.div initial="hidden" animate="visible" variants={fadeUp} transition={{ duration: 0.45 }} className="hidden gap-4 lg:grid">
+						<a href="https://github.com/Parth-star262" target="_blank" rel="noreferrer" className="portfolio-side-link">GitHub</a>
+						<a href="https://linkedin.com/in/parth-hada" target="_blank" rel="noreferrer" className="portfolio-side-link">LinkedIn</a>
+						<a href="mailto:202451124@iiitvadodara.ac.in" className="portfolio-side-link">Email</a>
+					</motion.div>
 
-      <section id="projects" className="bg-[#0b1428] px-4 py-20 text-white sm:px-6">
-        <div className="mx-auto max-w-7xl">
-          <div className="mb-10 flex flex-col justify-between gap-4 md:flex-row md:items-end">
-            <div>
-              <p className="text-sm font-bold uppercase tracking-[0.18em] text-slate-300">Featured Project</p>
-              <h2 className="mt-3 text-3xl font-black">Building real products with measurable depth.</h2>
-            </div>
-            <p className="max-w-xl text-sm leading-6 text-slate-300">
-              DSA-Judge is my flagship project and current public work. The page stays focused instead of adding filler projects.
-            </p>
-          </div>
+					<motion.div
+						initial={{ opacity: 0, y: 24, scale: 0.98 }}
+						animate={{ opacity: 1, y: 0, scale: 1 }}
+						transition={{ duration: 0.55 }}
+						className="text-center"
+					>
+						<div className="mx-auto max-w-[340px] overflow-hidden rounded-[30px] border border-white/10 bg-white/5 p-2 shadow-[0_30px_70px_rgba(0,0,0,0.45)]">
+							<Image
+								src="/parth-photo.jpg"
+								alt="Parth Hada"
+								width={680}
+								height={760}
+								priority
+								className="h-auto w-full rounded-[24px] object-cover"
+							/>
+						</div>
+						<div className="mx-auto mt-5 flex w-fit flex-wrap justify-center gap-2">
+							<a href={resumeUrl} className="portfolio-pill-btn" download>
+								Resume ↓
+							</a>
+							<a href="#contact" className="portfolio-pill-btn portfolio-pill-btn--ghost">
+								Let&apos;s Talk <ArrowUpRight size={14} />
+							</a>
+						</div>
+					</motion.div>
 
-          <motion.article whileHover={{ y: -6 }} transition={{ duration: 0.25 }} className="grid gap-0 overflow-hidden rounded-xl border border-white/10 bg-white/[0.04] md:grid-cols-[0.9fr_1.1fr]">
-            <div className="p-8 md:p-10">
-              <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-lg bg-white text-[#0b1428]">
-                <Code2 size={24} />
-              </div>
-              <h3 className="text-3xl font-black">DSA-Judge</h3>
-              <p className="mt-3 text-lg font-semibold text-slate-100">AI-powered coding and technical interview platform.</p>
-              <p className="mt-4 text-sm leading-6 text-slate-400">
-                Full-stack platform for solving DSA problems, running code, practicing interviews, and improving consistency through analytics.
-              </p>
-              <div className="mt-6 flex flex-wrap gap-2">
-                {projectTech.map((tech) => (
-                  <span key={tech} className="rounded-md border border-white/10 bg-white/[0.05] px-3 py-1 text-xs font-semibold text-slate-300">{tech}</span>
-                ))}
-              </div>
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <a href="https://github.com/Parth-star262/DSA-Judge" target="_blank" rel="noreferrer" className="btn-ghost rounded-lg border-white/15 bg-white/[0.04] px-5 py-3 text-white hover:bg-white/[0.08]">
-                  <ArrowUpRight size={17} />
-                  <span>GitHub</span>
-                </a>
-                <Link href="/problems" className="btn-primary rounded-lg px-5 py-3">
-                  <span>Launch DSA Judge</span>
-                  <ArrowRight size={17} />
-                </Link>
-              </div>
-            </div>
+					<motion.div initial="hidden" animate="visible" variants={fadeUp} transition={{ duration: 0.5, delay: 0.08 }}>
+						<p className="text-center text-xs font-semibold uppercase tracking-[0.26em] text-slate-400 lg:text-right">Parth Hada</p>
+						<h1 className="mt-4 text-center text-5xl font-black leading-[0.95] tracking-tight text-white sm:text-6xl md:text-7xl lg:text-right">
+							Full Stack
+							<span className="mx-2 inline-block rounded-sm bg-white px-2 text-black">Developer</span>
+							<br />
+							<span className="font-script text-[#b7c0d4]">Building Practical AI + Web Products</span>
+						</h1>
+						<p className="mx-auto mt-6 max-w-2xl text-center text-base leading-7 text-slate-300 lg:mx-0 lg:text-right">
+							Computer Science Student at IIIT Vadodara. I build full-stack applications, AI-powered systems, and developer products focused on real-world utility.
+						</p>
+						<div className="mt-8 flex flex-wrap justify-center gap-3 lg:justify-end">
+							<a href="#projects" className="portfolio-pill-btn">
+								View Projects <ArrowRight size={15} />
+							</a>
+							<a href={launchUrl} target="_blank" rel="noreferrer" className="portfolio-pill-btn portfolio-pill-btn--ghost">
+								Launch DSA-Judge <ArrowUpRight size={15} />
+							</a>
+						</div>
+						<div className="mt-6 flex items-center justify-center gap-2 text-sm text-slate-400 lg:justify-end">
+							<MapPin size={15} />
+							Gandhinagar, Gujarat
+						</div>
+					</motion.div>
+				</div>
+			</section>
 
-            <div className="grid content-stretch gap-3 border-t border-white/10 bg-[#0a1326] p-5 md:border-l md:border-t-0">
-              {dsaFeatures.map((feature) => {
-                const Icon = feature.icon;
-                return (
-                  <div key={feature.title} className="rounded-lg border border-white/10 bg-white/[0.03] p-5 transition hover:border-white/20 hover:bg-white/[0.06]">
-                    <div className="flex items-start gap-4">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white text-[#10131f]">
-                        <Icon size={19} />
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-white">{feature.title}</h4>
-                        <p className="mt-1 text-sm text-slate-400">{feature.desc}</p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </motion.article>
-        </div>
-      </section>
+			<section id="projects" className="px-4 py-24 sm:px-6">
+				<div className="mx-auto max-w-7xl">
+					<motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.35 }} variants={fadeUp} className="mb-12">
+						<p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">Featured Project</p>
+						<h2 className="mt-3 text-4xl font-black leading-tight text-white sm:text-5xl">
+							DSA-Judge
+							<span className="ml-2 font-script text-[#b7c0d4]">Flagship Build</span>
+						</h2>
+						<p className="mt-4 max-w-3xl text-lg text-slate-300">AI-powered coding and technical interview platform.</p>
+					</motion.div>
 
-      <section id="education" className="px-4 py-20 sm:px-6">
-        <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
-          <div>
-            <p className="text-sm font-bold uppercase tracking-[0.18em] text-slate-300">Education</p>
-            <h2 className="mt-3 text-4xl font-black text-white">B.Tech CSE at IIIT Vadodara.</h2>
-            <p className="mt-4 text-base leading-7 text-[#9aa8c4]">
-              2024 to 2028. Building a strong base in computer science while working on production-style software projects.
-            </p>
-            <div className="mt-7 grid gap-3">
-              {involvement.map((item) => (
-                <div key={item} className="flex gap-3 rounded-lg border border-white/10 bg-white/6 p-4">
-                  <Rocket size={18} className="mt-0.5 shrink-0 text-cyan-300" />
-                  <div>
-                    <div className="text-sm text-slate-200">{item}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+					<motion.article
+						initial="hidden"
+						whileInView="visible"
+						viewport={{ once: true, amount: 0.25 }}
+						variants={fadeUp}
+						whileHover={{ y: -4 }}
+						transition={{ duration: 0.25 }}
+						className="rounded-[30px] border border-white/10 bg-[#090b0f] p-6 sm:p-8 lg:p-10"
+					>
+						<div className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr]">
+							<div>
+								<div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-300">
+									{['Next.js', 'TypeScript', 'Express', 'Prisma', 'PostgreSQL', 'Redis', 'Docker'].map((tag) => (
+										<span key={tag} className="rounded-full border border-white/12 px-3 py-1">{tag}</span>
+									))}
+								</div>
+								<p className="mt-6 max-w-xl text-sm leading-7 text-slate-300">
+									A full-stack platform for DSA practice with integrated judge execution, AI review, and interview workflows designed for consistent coding growth.
+								</p>
+								<div className="mt-7 flex flex-wrap gap-3">
+									<a href={launchUrl} target="_blank" rel="noreferrer" className="portfolio-pill-btn">
+										Launch DSA-Judge <ArrowUpRight size={15} />
+									</a>
+									<a href="https://github.com/Parth-star262/DSA-Judge" target="_blank" rel="noreferrer" className="portfolio-pill-btn portfolio-pill-btn--ghost">
+										GitHub <ArrowUpRight size={15} />
+									</a>
+								</div>
+							</div>
 
-          <div className="rounded-xl border border-white/10 bg-[#0b1428] p-5">
-            <h3 className="text-xl font-black text-white">Coding Profiles</h3>
-            <p className="mt-2 text-sm text-slate-300">Connect with my work, updates, and project progress.</p>
-            <div className="mt-5 grid gap-3">
-              {codingProfiles.map((item) => (
-                <a
-                  key={item.name}
-                  href={item.href}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-slate-100 transition hover:bg-white/10"
-                >
-                  <span>{item.name}</span>
-                  <ArrowUpRight size={16} />
-                </a>
-              ))}
-            </div>
-            <div className="mt-6 rounded-lg border border-white/10 bg-white/5 p-4">
-              <div className="flex items-center gap-2 text-slate-200">
-                <CodeXml size={16} className="text-cyan-300" />
-                <span className="font-semibold">Current Focus</span>
-              </div>
-              <p className="mt-2 text-sm text-slate-300">Shipping polished full-stack applications with practical AI integrations and strong engineering fundamentals.</p>
-            </div>
-          </div>
-        </div>
-      </section>
+							<div className="grid gap-4">
+								{projectFeatures.map((item) => {
+									const Icon = item.icon;
+									return (
+										<div key={item.title} className="group flex items-start gap-4 rounded-2xl border border-white/10 bg-white/[0.02] p-4 transition hover:border-white/20 hover:bg-white/[0.04]">
+											<div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/15 text-slate-200 transition group-hover:text-white">
+												<Icon size={17} />
+											</div>
+											<div>
+												<h3 className="text-sm font-bold text-white">{item.title}</h3>
+												<p className="mt-1 text-sm leading-6 text-slate-400">{item.desc}</p>
+											</div>
+										</div>
+									);
+								})}
+							</div>
+						</div>
+					</motion.article>
+				</div>
+			</section>
 
-      <section id="contact" className="border-t border-white/10 bg-[#0b1428] px-4 py-16 sm:px-6">
-        <div className="mx-auto flex max-w-7xl flex-col justify-between gap-6 md:flex-row md:items-center">
-          <div>
-            <p className="text-sm font-bold uppercase tracking-[0.18em] text-slate-300">Contact</p>
-            <h2 className="mt-3 text-3xl font-black text-white">Open to internships and collaborations.</h2>
-            <p className="mt-2 text-[#9aa8c4]">If you are building a meaningful product or hiring interns, I&apos;d love to connect.</p>
-          </div>
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <a href="mailto:202451124@iiitvadodara.ac.in" className="btn-ghost rounded-lg border-white/20 bg-white/8 px-5 py-3 text-white hover:bg-white/14">
-              <Mail size={17} />
-              <span>Email</span>
-            </a>
-            <a href="https://github.com/Parth-star262" target="_blank" rel="noreferrer" className="btn-primary rounded-lg px-5 py-3">
-              <ArrowUpRight size={17} />
-              <span>GitHub</span>
-            </a>
-          </div>
-        </div>
-      </section>
+			<section id="skills" className="overflow-hidden px-4 py-24 sm:px-6">
+				<div className="mx-auto max-w-7xl">
+					<motion.h2 initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.6 }} variants={fadeUp} className="text-center text-4xl font-black text-white sm:text-5xl">
+						My Tech Stack
+					</motion.h2>
+					<div className="mt-12 overflow-hidden">
+						<div className="portfolio-tech-track">
+							{[...techStack, ...techStack].map((tech, idx) => (
+								<div key={`${tech.name}-${idx}`} className="portfolio-tech-orb" title={tech.name}>
+									<img src={tech.icon} alt={tech.name} loading="lazy" className="h-10 w-10 object-contain" />
+									<span className="mt-2 text-xs text-slate-300">{tech.name}</span>
+								</div>
+							))}
+						</div>
+					</div>
+				</div>
+			</section>
 
-      <footer className="bg-[#070c18] px-4 py-8 text-sm text-slate-400 sm:px-6">
-        <div className="mx-auto flex max-w-7xl flex-col justify-between gap-3 sm:flex-row">
-          <span>Parth Hada | Full-Stack & AI Developer</span>
-          <span>Flagship project: DSA-Judge, available at /problems.</span>
-        </div>
-      </footer>
-    </div>
-  );
+			<section id="about" className="px-4 py-24 sm:px-6">
+				<div className="mx-auto max-w-7xl">
+					<motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.35 }} variants={fadeUp} className="text-center">
+						<p className="inline-flex items-center gap-2 rounded-full border border-white/12 px-4 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-slate-300">
+							About Me
+						</p>
+						<h2 className="mx-auto mt-5 max-w-5xl text-4xl font-black leading-tight text-white sm:text-6xl">
+							Building software where
+							<span className="ml-2 font-script text-[#b7c0d4]">engineering</span>
+							meets curiosity.
+						</h2>
+						<p className="mx-auto mt-6 max-w-3xl text-lg leading-8 text-slate-300">
+							I am a B.Tech CSE student at Indian Institute of Information Technology, Vadodara (2024-2028), interested in full-stack development, AI/LLM workflows, and problem solving through DSA.
+						</p>
+					</motion.div>
+
+					<motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.25 }} variants={fadeUp} className="mt-14 grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+						<div className="rounded-[26px] border border-white/10 bg-white/[0.02] p-6">
+							<h3 className="flex items-center gap-2 text-2xl font-black text-white"><GraduationCap size={22} /> Education</h3>
+							<p className="mt-5 text-lg font-semibold text-white">Indian Institute of Information Technology, Vadodara</p>
+							<p className="mt-2 text-slate-300">B.Tech - Computer Science Engineering (CSE)</p>
+							<p className="mt-1 text-slate-400">2024-2028</p>
+
+							<h4 className="mt-8 text-lg font-bold text-white">Campus Involvement</h4>
+							<ul className="mt-3 space-y-2 text-slate-300">
+								<li className="flex items-start gap-2"><ArrowRight size={14} className="mt-1 shrink-0" /> Active Member - Finance Club, IIIT Vadodara</li>
+								<li className="flex items-start gap-2"><ArrowRight size={14} className="mt-1 shrink-0" /> Active Member - E-Cell, IIIT Vadodara</li>
+							</ul>
+						</div>
+
+						<div className="rounded-[26px] border border-white/10 bg-white/[0.02] p-6">
+							<h3 className="flex items-center gap-2 text-2xl font-black text-white"><Brain size={22} /> Achievements</h3>
+							<ul className="mt-5 space-y-3 text-slate-300">
+								<li className="flex items-start gap-2"><ArrowRight size={14} className="mt-1 shrink-0" /> Solved 500+ DSA problems across coding platforms.</li>
+								<li className="flex items-start gap-2"><ArrowRight size={14} className="mt-1 shrink-0" /> HackOut&apos;25 (2025), DA-IICT campus participant.</li>
+								<li className="flex items-start gap-2"><ArrowRight size={14} className="mt-1 shrink-0" /> Started building Coastal Threat Alert during hackathon collaboration.</li>
+							</ul>
+
+							<div className="mt-8 rounded-2xl border border-white/10 bg-[#0b0d12] p-4">
+								<p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">Current Focus</p>
+								<p className="mt-3 text-sm leading-7 text-slate-300">Full-stack product architecture, practical AI integration, and clean backend systems.</p>
+							</div>
+						</div>
+					</motion.div>
+				</div>
+			</section>
+
+			<section className="px-4 py-24 sm:px-6">
+				<div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-start">
+					<div>
+						<h2 className="text-4xl font-black text-white sm:text-5xl">
+							Frequently Asked
+							<br />
+							<span className="font-script text-[#b7c0d4]">Questions</span>
+						</h2>
+					</div>
+					<div className="space-y-3">
+						{faqs.map((item) => (
+							<details key={item.q} className="group rounded-2xl border border-white/10 bg-white/[0.01] p-5 open:bg-white/[0.03]">
+								<summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-lg font-semibold text-white">
+									{item.q}
+									<ChevronDown size={18} className="transition group-open:rotate-180" />
+								</summary>
+								<p className="pt-3 text-sm leading-7 text-slate-300">{item.a}</p>
+							</details>
+						))}
+					</div>
+				</div>
+			</section>
+
+			<section id="contact" className="border-t border-white/10 px-4 py-24 sm:px-6">
+				<div className="mx-auto max-w-7xl">
+					<div className="text-center">
+						<h2 className="text-5xl font-black text-white sm:text-6xl">
+							Let&apos;s build something
+							<br />
+							<span className="font-script text-[#b7c0d4]">meaningful.</span>
+						</h2>
+					</div>
+
+					<div className="mt-14 grid gap-10 lg:grid-cols-[0.9fr_1.1fr]">
+						<div className="space-y-4 text-slate-200">
+							<a href="mailto:202451124@iiitvadodara.ac.in" className="portfolio-contact-link">
+								<Mail size={17} /> 202451124@iiitvadodara.ac.in
+							</a>
+							<a href="https://github.com/Parth-star262" target="_blank" rel="noreferrer" className="portfolio-contact-link">
+								<Code2 size={17} /> github.com/Parth-star262
+							</a>
+							<a href="https://linkedin.com/in/parth-hada" target="_blank" rel="noreferrer" className="portfolio-contact-link">
+								<Link2 size={17} /> linkedin.com/in/parth-hada
+							</a>
+							<a href={resumeUrl} className="portfolio-contact-link" download>
+								<Code2 size={17} /> Resume Download
+							</a>
+						</div>
+
+						<form onSubmit={submitContact} className="rounded-[28px] border border-white/10 bg-white/[0.02] p-6">
+							<label className="mb-4 block text-sm font-semibold text-slate-200">
+								Name
+								<input
+									value={formName}
+									onChange={(event) => setFormName(event.target.value)}
+									required
+									className="mt-2 w-full rounded-xl border border-white/12 bg-transparent px-4 py-3 text-white outline-none transition focus:border-white/30"
+									placeholder="Enter your name"
+								/>
+							</label>
+							<label className="mb-4 block text-sm font-semibold text-slate-200">
+								Email
+								<input
+									type="email"
+									value={formEmail}
+									onChange={(event) => setFormEmail(event.target.value)}
+									required
+									className="mt-2 w-full rounded-xl border border-white/12 bg-transparent px-4 py-3 text-white outline-none transition focus:border-white/30"
+									placeholder="Enter your email"
+								/>
+							</label>
+							<label className="mb-6 block text-sm font-semibold text-slate-200">
+								Message
+								<textarea
+									value={formMessage}
+									onChange={(event) => setFormMessage(event.target.value)}
+									required
+									rows={5}
+									className="mt-2 w-full rounded-xl border border-white/12 bg-transparent px-4 py-3 text-white outline-none transition focus:border-white/30"
+									placeholder="Type your message"
+								/>
+							</label>
+							<button type="submit" className="portfolio-pill-btn">
+								Submit <ArrowUpRight size={15} />
+							</button>
+						</form>
+					</div>
+				</div>
+			</section>
+
+			<footer className="border-t border-white/10 px-4 py-10 sm:px-6">
+				<div className="mx-auto flex max-w-7xl flex-col gap-3 text-sm text-slate-400 sm:flex-row sm:items-center sm:justify-between">
+					<span>Parth Hada - Computer Science Student | Full-Stack & AI Developer</span>
+					<div className="flex items-center gap-4">
+						<a href={launchUrl} target="_blank" rel="noreferrer" className="hover:text-white">Launch DSA-Judge</a>
+						<Link href="/problems" className="hover:text-white">Go to Problem Set</Link>
+					</div>
+				</div>
+			</footer>
+		</div>
+	);
 }

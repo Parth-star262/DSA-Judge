@@ -11,6 +11,7 @@ import {
   Menu,
   Shield,
   Sparkles,
+  Sun,
   Trophy,
   User,
   X,
@@ -20,11 +21,8 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const portfolioLinks = [
   { name: 'Home', href: '#home' },
-  { name: 'About', href: '#about' },
-  { name: 'Skills', href: '#skills' },
   { name: 'Projects', href: '#projects' },
-  { name: 'Education', href: '#education' },
-  { name: 'Contact', href: '#contact' },
+  { name: 'About', href: '#about' },
 ];
 
 const appLinks = [
@@ -59,14 +57,8 @@ export default function Navbar() {
   };
 
   const brand = isPortfolio ? (
-    <Link href="/" className="flex items-center gap-3 group" onClick={closeMobile}>
-      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white text-[#0b1428] shadow-sm transition group-hover:-translate-y-0.5">
-        <Code2 size={22} />
-      </div>
-      <div className="leading-tight">
-        <div className="text-base font-black text-white">Parth Hada</div>
-        <div className="text-xs font-semibold text-slate-300">Full-stack & AI developer</div>
-      </div>
+    <Link href="/" className="flex items-center gap-2 group" onClick={closeMobile}>
+      <div className="text-2xl font-black tracking-tight text-white">Parth.</div>
     </Link>
   ) : (
     <Link href="/" className="flex items-center gap-3 group" onClick={closeMobile}>
@@ -84,7 +76,7 @@ export default function Navbar() {
   return (
     <header className={`sticky top-0 z-50 w-full border-b backdrop-blur-2xl ${
       isPortfolio
-        ? 'border-white/10 bg-[#070c18]/88 text-white'
+        ? 'border-white/10 bg-[#050608]/86 text-white'
         : 'border-white/10 bg-[#030014]/80 text-white supports-[backdrop-filter]:bg-[#030014]/60'
     }`}>
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
@@ -143,10 +135,12 @@ export default function Navbar() {
         <div className="hidden items-center gap-2 md:flex">
           {isPortfolio ? (
             <>
-              <a href="https://github.com/Parth-star262" target="_blank" rel="noreferrer" className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-white/20 bg-white/5 text-white transition hover:bg-white/12" aria-label="GitHub profile">
-                <Code2 size={18} />
+              <button type="button" className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-slate-200 transition hover:bg-white/10" aria-label="Theme switch">
+                <Sun size={16} />
+              </button>
+              <a href="/resume" download className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white px-5 py-2 text-sm font-semibold text-black transition hover:shadow-[0_0_24px_rgba(255,255,255,0.32)]">
+                Resume ↓
               </a>
-              <a href="mailto:202451124@iiitvadodara.ac.in?subject=Resume%20Request%20from%20Portfolio" className="btn-primary rounded-lg px-4 py-2 text-sm">Request Resume</a>
             </>
           ) : user ? (
             <>
@@ -219,6 +213,7 @@ export default function Navbar() {
                     <Bot size={16} />
                     <span>Launch DSA Judge</span>
                   </Link>
+                  <a href="/resume" download onClick={closeMobile} className="btn-ghost mt-1 rounded-lg py-2 text-sm">Resume ↓</a>
                 </div>
               ) : (
                 <div className="grid gap-1">
