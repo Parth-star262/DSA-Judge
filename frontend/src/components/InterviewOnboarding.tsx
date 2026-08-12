@@ -37,6 +37,8 @@ interface Props {
   onSkipToAssessment?: () => void;
 }
 
+type ApiError = { response?: { data?: { error?: string } } };
+
 export default function InterviewOnboarding({ onComplete, onSkipToAssessment }: Props) {
   const [step, setStep] = useState(1);
   const totalSteps = 4;
@@ -67,8 +69,9 @@ export default function InterviewOnboarding({ onComplete, onSkipToAssessment }: 
         strongTopics: practiceTopic.filter((t) => !weakTopics.includes(t)),
       });
       onComplete();
-    } catch (err: any) {
-      setError(err?.response?.data?.error || 'Failed to save profile. Please try again.');
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      setError(apiError.response?.data?.error || 'Failed to save profile. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -118,7 +121,7 @@ export default function InterviewOnboarding({ onComplete, onSkipToAssessment }: 
             {step === 1 && (
               <motion.div key="step1" variants={stepVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.25 }}>
                 <h3 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
-                  <User size={18} className="text-fuchsia-400" /> What's your skill level?
+                  <User size={18} className="text-fuchsia-400" /> What&apos;s your skill level?
                 </h3>
                 <p className="text-slate-400 text-sm mb-6">This helps us calibrate interview difficulty to your current level.</p>
                 <div className="grid gap-3">
@@ -148,7 +151,7 @@ export default function InterviewOnboarding({ onComplete, onSkipToAssessment }: 
                 <h3 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
                   <Target size={18} className="text-fuchsia-400" /> Target Companies (optional)
                 </h3>
-                <p className="text-slate-400 text-sm mb-6">Select companies you're targeting. We'll tailor question styles accordingly.</p>
+                <p className="text-slate-400 text-sm mb-6">Select companies you&apos;re targeting. We&apos;ll tailor question styles accordingly.</p>
                 <div className="flex flex-wrap gap-2">
                   {COMPANIES.map((c) => (
                     <button

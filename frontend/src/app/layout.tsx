@@ -4,8 +4,8 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import Navbar from '@/components/Navbar';
 
 export const metadata: Metadata = {
-  title: 'DSA Judge — Practice Coding Problems',
-  description: 'Solve DSA problems, get instant verdicts, time complexity analysis, hints, and editorials.',
+  title: 'Parth Hada | Full-Stack & AI Developer',
+  description: 'Personal developer portfolio of Parth Hada, featuring DSA-Judge and full-stack engineering work.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

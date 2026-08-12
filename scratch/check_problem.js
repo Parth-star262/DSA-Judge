@@ -10,3 +10,9 @@ async function checkProblem() {
 }
 
 checkProblem().finally(() => prisma.$disconnect());
+
+
+
+// git add backend/Dockerfile
+// git commit -m "Seed database when Docker service starts"
+// git push

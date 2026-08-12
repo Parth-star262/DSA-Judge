@@ -119,7 +119,7 @@ export default function ProblemsPage() {
       {/* Header Banner */}
       <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8 relative z-10">
         <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-extrabold uppercase tracking-widest mb-3">
-          <ShieldCheck size={14} /> Striver's A2Z DSA Sheet Aligned
+          <ShieldCheck size={14} /> Striver&apos;s A2Z DSA Sheet Aligned
         </div>
         <h1 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight mb-3 font-['Outfit']">
           Curated DSA Problems

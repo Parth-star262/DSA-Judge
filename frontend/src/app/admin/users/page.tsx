@@ -26,6 +26,7 @@ type User = {
     submissions: number;
   };
 };
+type UserRole = User['role'];
 
 export default function UserManagement() {
   const [users, setUsers] = useState<User[]>([]);
@@ -48,10 +49,10 @@ export default function UserManagement() {
     fetchUsers();
   }, []);
 
-  const updateRole = async (userId: string, newRole: string) => {
+  const updateRole = async (userId: string, newRole: UserRole) => {
     try {
       await api.put(`/admin/users/${userId}`, { role: newRole });
-      setUsers(users.map(u => u.id === userId ? { ...u, role: newRole as any } : u));
+      setUsers(users.map(u => u.id === userId ? { ...u, role: newRole } : u));
     } catch (err) {
       console.error(err);
       alert('Failed to update role');
@@ -155,7 +156,7 @@ export default function UserManagement() {
                       <select 
                         className="bg-black/40 border border-white/5 rounded-lg px-2 py-1 text-xs text-slate-300 focus:outline-none focus:border-indigo-500"
                         value={user.role}
-                        onChange={(e) => updateRole(user.id, e.target.value)}
+                        onChange={(e) => updateRole(user.id, e.target.value as UserRole)}
                       >
                         <option value="FREE">Free</option>
                         <option value="ENROLLED">Enrolled</option>

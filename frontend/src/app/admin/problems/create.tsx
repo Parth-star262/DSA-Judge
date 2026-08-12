@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 type TestCase = { input: string; expectedOutput: string; isSample?: boolean; points?: number };
 type ScalingInput = { n: number; input: string };
 
+const getErrorMessage = (err: unknown) => (err instanceof Error ? err.message : String(err));
+
 export default function AdminCreateProblem() {
   const [slug, setSlug] = useState('');
   const [title, setTitle] = useState('');
@@ -68,8 +70,8 @@ export default function AdminCreateProblem() {
       }
       const created = await res.json();
       alert('Created: ' + created.slug);
-    } catch (err: any) {
-      alert('Error: ' + (err.message || err));
+    } catch (err: unknown) {
+      alert('Error: ' + getErrorMessage(err));
     }
   };
 

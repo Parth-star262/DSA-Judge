@@ -45,6 +45,8 @@ interface Profile {
   weakTopics: string[]; strongTopics: string[]; totalSessions: number; avgScore: number;
 }
 
+type ApiError = { response?: { status?: number; data?: { error?: string } } };
+
 const ALL_TOPICS = [
   'Arrays','Strings','Linked List','Stack','Queue','Hashing','Binary Search',
   'Recursion','Backtracking','Trees','BST','Heap','Graphs','Trie','Greedy',
@@ -183,15 +185,14 @@ function HintPanel({ sessionId, disabled }: { sessionId: string; disabled: boole
 
 // ─── Timer Hook ───────────────────────────────────────────────────────────────
 function useTimer(startedAt: string | null, stopped: boolean) {
-  const [elapsed, setElapsed] = useState(0);
+  const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     if (!startedAt || stopped) return;
-    const base = Date.now() - new Date(startedAt).getTime();
-    setElapsed(Math.floor(base / 1000));
-    const id = setInterval(() => setElapsed((prev) => prev + 1), 1000);
+    const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, [startedAt, stopped]);
-  return elapsed;
+  if (!startedAt || stopped) return 0;
+  return Math.max(0, Math.floor((now - new Date(startedAt).getTime()) / 1000));
 }
 
 // ─── Main Interview Page ───────────────────────────────────────────────────────
@@ -259,14 +260,15 @@ export default function InterviewPage() {
       setCurrentSession(res.data);
       setSelectedSessionId(id);
       localStorage.setItem('coach-session-id', id);
-    } catch (err: any) {
-      const status = err?.response?.status;
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      const status = apiError.response?.status;
       if (status === 404 || status === 403) {
         localStorage.removeItem('coach-session-id');
         setCurrentSession(null); setSelectedSessionId(null);
         return;
       }
-      if (!silent) setPageError(err?.response?.data?.error || 'Failed to load session.');
+      if (!silent) setPageError(apiError.response?.data?.error || 'Failed to load session.');
     }
   }, []);
 
@@ -304,8 +306,9 @@ export default function InterviewPage() {
       setQuestionToScore(activeTranscript.length > 0 ? activeTranscript[activeTranscript.length - 1].content : null);
       setQuestionStartedAt(new Date().toISOString());
       await loadSessions();
-    } catch (err: any) {
-      setPageError(err?.response?.data?.error || 'Failed to start interview session.');
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      setPageError(apiError.response?.data?.error || 'Failed to start interview session.');
     } finally { setStarting(false); }
   };
 
@@ -323,8 +326,9 @@ export default function InterviewPage() {
       // Track the latest interviewer question for scoring
       setQuestionToScore(res.data.message);
       setQuestionStartedAt(new Date().toISOString());
-    } catch (err: any) {
-      setPageError(err?.response?.data?.error || 'Failed to send message.');
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      setPageError(apiError.response?.data?.error || 'Failed to send message.');
       setCurrentSession((prev) => prev ? { ...prev, messages: prev.messages.slice(0, -1) } : prev);
     } finally { setSending(false); }
   };
@@ -358,8 +362,9 @@ export default function InterviewPage() {
       } : prev);
       await loadSessions();
       await loadProfile();
-    } catch (err: any) {
-      setPageError(err?.response?.data?.error || 'Failed to end interview session.');
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      setPageError(apiError.response?.data?.error || 'Failed to end interview session.');
     } finally { setEnding(false); }
   };
 
@@ -545,7 +550,7 @@ export default function InterviewPage() {
                     </div>
                     <h3 className="text-xl font-bold text-white mb-2">Start a mock interview</h3>
                     <p className="text-slate-400 max-w-md mb-6 text-sm">
-                      Choose a mode, optionally focus on a topic, and click "Start New" to begin your personalized coaching session.
+                      Choose a mode, optionally focus on a topic, and click &quot;Start New&quot; to begin your personalized coaching session.
                     </p>
                     <button onClick={startInterview} disabled={starting}
                       className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-fuchsia-500 to-indigo-500 text-white font-semibold">
@@ -739,7 +744,7 @@ export default function InterviewPage() {
                 <li className="flex items-start gap-2"><CheckCircle2 size={14} className="text-emerald-400 mt-0.5 shrink-0" />State brute force first, then optimize.</li>
                 <li className="flex items-start gap-2"><CheckCircle2 size={14} className="text-emerald-400 mt-0.5 shrink-0" />Always mention time and space complexity.</li>
                 <li className="flex items-start gap-2"><CheckCircle2 size={14} className="text-emerald-400 mt-0.5 shrink-0" />Talk through edge cases without being asked.</li>
-                <li className="flex items-start gap-2"><CheckCircle2 size={14} className="text-emerald-400 mt-0.5 shrink-0" />Use "Score Answer" to get instant AI feedback on each question.</li>
+                <li className="flex items-start gap-2"><CheckCircle2 size={14} className="text-emerald-400 mt-0.5 shrink-0" />Use &quot;Score Answer&quot; to get instant AI feedback on each question.</li>
               </ul>
 
               <div className="mt-4 pt-4 border-t border-white/5">

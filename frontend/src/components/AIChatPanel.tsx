@@ -20,6 +20,8 @@ interface AIChatPanelProps {
   disabled?: boolean;
 }
 
+type ApiError = { response?: { data?: { error?: string } } };
+
 export default function AIChatPanel({
   problemSlug,
   problemTitle,
@@ -66,8 +68,9 @@ export default function AIChatPanel({
 
       const reply = res.data.analysis || "I'm sorry, I couldn't process that. Let's try again.";
       setMessages((prev) => [...prev, { role: 'assistant', content: reply }]);
-    } catch (err: any) {
-      const errMsg = err?.response?.data?.error || 'Failed to connect to AI. Please try again.';
+    } catch (err: unknown) {
+      const apiError = err as ApiError;
+      const errMsg = apiError.response?.data?.error || 'Failed to connect to AI. Please try again.';
       setMessages((prev) => [...prev, { role: 'assistant', content: `❌ Error: ${errMsg}` }]);
     } finally {
       setLoading(false);

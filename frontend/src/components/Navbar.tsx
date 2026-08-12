@@ -23,7 +23,7 @@ const portfolioLinks = [
   { name: 'About', href: '#about' },
   { name: 'Skills', href: '#skills' },
   { name: 'Projects', href: '#projects' },
-  { name: 'DSA-Judge', href: '#dsa-judge' },
+  { name: 'Education', href: '#education' },
   { name: 'Contact', href: '#contact' },
 ];
 
@@ -60,12 +60,12 @@ export default function Navbar() {
 
   const brand = isPortfolio ? (
     <Link href="/" className="flex items-center gap-3 group" onClick={closeMobile}>
-      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#10131f] text-white shadow-sm transition group-hover:-translate-y-0.5">
+      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white text-[#0b1428] shadow-sm transition group-hover:-translate-y-0.5">
         <Code2 size={22} />
       </div>
       <div className="leading-tight">
-        <div className="text-base font-black text-[#10131f]">Parth</div>
-        <div className="text-xs font-semibold text-[#667085]">Full-stack developer</div>
+        <div className="text-base font-black text-white">Parth Hada</div>
+        <div className="text-xs font-semibold text-slate-300">Full-stack & AI developer</div>
       </div>
     </Link>
   ) : (
@@ -84,7 +84,7 @@ export default function Navbar() {
   return (
     <header className={`sticky top-0 z-50 w-full border-b backdrop-blur-2xl ${
       isPortfolio
-        ? 'border-[#dde3ee] bg-white/86 text-[#10131f]'
+        ? 'border-white/10 bg-[#070c18]/88 text-white'
         : 'border-white/10 bg-[#030014]/80 text-white supports-[backdrop-filter]:bg-[#030014]/60'
     }`}>
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
@@ -93,7 +93,7 @@ export default function Navbar() {
         {isPortfolio ? (
           <nav className="hidden items-center gap-1 md:flex">
             {portfolioLinks.map((link) => (
-              <a key={link.href} href={link.href} className="rounded-lg px-3 py-2 text-sm font-semibold text-[#4c5872] transition hover:bg-[#eef2f7] hover:text-[#10131f]">
+              <a key={link.href} href={link.href} className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-300 transition hover:bg-white/10 hover:text-white">
                 {link.name}
               </a>
             ))}
@@ -143,10 +143,10 @@ export default function Navbar() {
         <div className="hidden items-center gap-2 md:flex">
           {isPortfolio ? (
             <>
-              <a href="https://github.com/Parth-star262" target="_blank" rel="noreferrer" className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-[#d7deea] bg-white text-[#10131f] transition hover:bg-[#f0f3f8]" aria-label="GitHub profile">
+              <a href="https://github.com/Parth-star262" target="_blank" rel="noreferrer" className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-white/20 bg-white/5 text-white transition hover:bg-white/12" aria-label="GitHub profile">
                 <Code2 size={18} />
               </a>
-              <a href="#projects" className="btn-primary rounded-lg px-4 py-2 text-sm">View Projects</a>
+              <a href="mailto:202451124@iiitvadodara.ac.in?subject=Resume%20Request%20from%20Portfolio" className="btn-primary rounded-lg px-4 py-2 text-sm">Request Resume</a>
             </>
           ) : user ? (
             <>
@@ -191,7 +191,7 @@ export default function Navbar() {
           type="button"
           onClick={() => setMobileOpen((open) => !open)}
           className={`inline-flex h-10 w-10 items-center justify-center rounded-lg border md:hidden ${
-            isPortfolio ? 'border-[#d7deea] bg-white text-[#10131f]' : 'border-white/10 bg-white/[0.04] text-white'
+            isPortfolio ? 'border-white/20 bg-white/5 text-white' : 'border-white/10 bg-white/[0.04] text-white'
           }`}
           aria-label="Toggle navigation"
         >
@@ -205,13 +205,13 @@ export default function Navbar() {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className={`overflow-hidden border-t md:hidden ${isPortfolio ? 'border-[#dde3ee] bg-white' : 'border-white/10 bg-[#07091b]'}`}
+            className={`overflow-hidden border-t md:hidden ${isPortfolio ? 'border-white/10 bg-[#0b1428]' : 'border-white/10 bg-[#07091b]'}`}
           >
             <div className="mx-auto max-w-7xl px-4 py-3">
               {isPortfolio ? (
                 <div className="grid gap-1">
                   {portfolioLinks.map((link) => (
-                    <a key={link.href} href={link.href} onClick={closeMobile} className="rounded-lg px-3 py-2 text-sm font-semibold text-[#4c5872] hover:bg-[#eef2f7]">
+                    <a key={link.href} href={link.href} onClick={closeMobile} className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-300 hover:bg-white/10 hover:text-white">
                       {link.name}
                     </a>
                   ))}
