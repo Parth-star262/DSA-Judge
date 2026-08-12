@@ -148,13 +148,10 @@ export default function ProfilePage() {
     reader.readAsDataURL(file);
   };
 
-  if (loading) {
+  if (loading || historyLoading) {
     return (
-      <div className="flex justify-center items-center min-h-[60vh]">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-10 h-10 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
-          <span className="text-slate-400 font-medium tracking-widest text-sm uppercase">Loading Profile...</span>
-        </div>
+      <div className="max-w-[1440px] mx-auto px-4 sm:px-6 py-10">
+        <div className="animate-pulse w-full h-64 bg-white/5 rounded-2xl"></div>
       </div>
     );
   }
@@ -162,20 +159,19 @@ export default function ProfilePage() {
   if (!user) {
     return (
       <div className="min-h-[70vh] flex items-center justify-center p-6">
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-          className="glass rounded-3xl p-10 max-w-md w-full text-center relative overflow-hidden"
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="glass-panel rounded-3xl p-10 max-w-md w-full text-center relative overflow-hidden border border-white/10"
         >
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-[1px] bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent" />
-          <div className="w-20 h-20 rounded-full bg-slate-800 flex items-center justify-center mx-auto mb-6 shadow-xl border border-white/5">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-[1px] bg-gradient-to-r from-transparent via-indigo-500 to-transparent" />
+          <div className="w-20 h-20 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mx-auto mb-6 shadow-xl">
             <User size={36} className="text-indigo-400" />
           </div>
           <h1 className="text-2xl font-bold text-white mb-2">Login Required</h1>
-          <p className="text-slate-400 mb-8">Please sign in to view your progress and submission history.</p>
+          <p className="text-slate-400 text-sm mb-8">Please sign in to view your progress, radar analytics, and submission history.</p>
           <Link href="/login">
-            <button className="w-full btn-primary bg-gradient-to-r from-indigo-500 to-purple-500 py-3 shadow-[0_0_20px_rgba(99,102,241,0.3)]">
-              Sign In Now
-            </button>
+            <button className="w-full bg-indigo-600 hover:bg-indigo-700 py-3 rounded-xl font-bold text-white transition">Sign In Now</button>
           </Link>
         </motion.div>
       </div>

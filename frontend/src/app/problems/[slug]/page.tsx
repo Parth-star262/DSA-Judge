@@ -13,7 +13,8 @@ import AIHintButton from '@/components/AIHintButton';
 import AIReviewPanel from '@/components/AIReviewPanel';
 import AIChatPanel from '@/components/AIChatPanel';
 import NextProblemCard from '@/components/NextProblemCard';
-import { Play, Send, BookOpen, Lightbulb, Lock, ChevronLeft, Tag, GripVertical } from 'lucide-react';
+import { Skeleton } from '@/components/SkeletonLoader';
+import { Play, Send, BookOpen, Lightbulb, Lock, ChevronLeft, Tag, GripVertical, HelpCircle, X } from 'lucide-react';
 import Link from 'next/link';
 import axios from 'axios';
 import { streamSubmission, type JudgeResult } from '@/lib/sse';
@@ -53,13 +54,9 @@ const getStarter = (problemSlug: string, language: Language) => {
 };
 
 const stripInlineExamples = (description: string) => {
-  // Remove inline example text completely - find where "Example 1:" starts and cut everything from there
   const exampleIndex = description.search(/Example\s+\d+:/i);
   if (exampleIndex === -1) return description;
-  
-  // Also check for the problem statement ending and cut from there
-  const beforeExamples = description.substring(0, exampleIndex).trim();
-  return beforeExamples;
+  return description.substring(0, exampleIndex).trim();
 };
 
 type Tab = 'description' | 'editorial' | 'hints';
@@ -184,7 +181,7 @@ export default function ProblemPage() {
     if (!isDragging) return;
 
     const handleMouseMove = (e: MouseEvent) => {
-      const containerHeight = window.innerHeight - 64; // Approximate navbar height
+      const containerHeight = window.innerHeight - 64;
       const distanceToBottom = window.innerHeight - e.clientY;
       const percentage = (distanceToBottom / containerHeight) * 100;
       setOutputHeightPercent(Math.max(20, Math.min(percentage, 80)));
@@ -192,7 +189,6 @@ export default function ProblemPage() {
 
     const handleMouseUp = () => {
       setIsDragging(false);
-      // let editor/monaco and other listeners recalc layout after resize
       window.dispatchEvent(new Event('resize'));
     };
 
@@ -227,8 +223,9 @@ export default function ProblemPage() {
   }, [isDraggingWidth, leftWidth]);
 
   useEffect(() => {
-    api.get(`/problems/${slug}`)
-      .then(r => {
+    api
+      .get(`/problems/${slug}`)
+      .then((r) => {
         setProblem(r.data);
         setCustomInput(r.data.testCases?.[0]?.input || '');
         setLanguage('cpp');
@@ -239,21 +236,21 @@ export default function ProblemPage() {
 
   useEffect(() => {
     if (tab === 'hints' && user && hints.length === 0) {
-      api.get(`/problems/${slug}/hints`).then(r => setHints(r.data));
+      api.get(`/problems/${slug}/hints`).then((r) => setHints(r.data));
     }
   }, [tab, user, slug, hints.length]);
 
   useEffect(() => {
     if (tab === 'editorial' && isEnrolled && !editorial) {
       setEditorialLoading(true);
-      api.get(`/problems/${slug}/editorial`)
-        .then(r => setEditorial(r.data))
+      api
+        .get(`/problems/${slug}/editorial`)
+        .then((r) => setEditorial(r.data))
         .catch(() => setEditorial(null))
         .finally(() => setEditorialLoading(false));
     }
   }, [tab, isEnrolled, slug, editorial]);
 
-  // Auto-show output when results arrive
   useEffect(() => {
     if (runResult || submitResult) {
       setShowOutput(true);
@@ -261,43 +258,11 @@ export default function ProblemPage() {
     }
   }, [runResult, submitResult]);
 
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement | null;
-      const isTypingTarget = target && ['INPUT', 'TEXTAREA'].includes(target.tagName);
-
-      if (event.key === '?' && !isTypingTarget) {
-        event.preventDefault();
-        setShowShortcuts(true);
-        return;
-      }
-
-      if (!(event.ctrlKey || event.metaKey)) return;
-
-      if (event.key === 'Enter') {
-        event.preventDefault();
-        void handleSubmit();
-        return;
-      }
-
-      if (event.key.toLowerCase() === 'r') {
-        event.preventDefault();
-        void handleRun();
-        return;
-      }
-
-      if (event.key.toLowerCase() === 'h') {
-        event.preventDefault();
-        document.dispatchEvent(new Event('dsa-judge:hint-shortcut'));
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleRun, handleSubmit]);
-
   async function handleRun() {
-    if (!user) { alert('Please login to run code'); return; }
+    if (!user) {
+      alert('Please login to run code');
+      return;
+    }
     const starterForCurrent = getStarter(slug, language);
     if (code.trim() === starterForCurrent.trim()) {
       setRunResult({
@@ -311,11 +276,12 @@ export default function ProblemPage() {
       return;
     }
 
-    setRunLoading(true); setRunResult(null);
+    setRunLoading(true);
+    setRunResult(null);
     try {
-      const sampleCases = (problem?.testCases || []).filter(tc => tc.isSample);
+      const sampleCases = (problem?.testCases || []).filter((tc) => tc.isSample);
       const selectedSample = sampleCases[activeTestCase];
-      const input = runMode === 'custom' ? customInput : (sampleCases[activeTestCase]?.input || '');
+      const input = runMode === 'custom' ? customInput : sampleCases[activeTestCase]?.input || '';
       const res = await api.post('/submissions/run', {
         problemSlug: slug,
         code,
@@ -331,7 +297,9 @@ export default function ProblemPage() {
       } else {
         setRunResult({ verdict: 'RUNTIME_ERROR', score: 0, passedCases: 0, totalCases: 0, stderr: 'Run failed' });
       }
-    } finally { setRunLoading(false); }
+    } finally {
+      setRunLoading(false);
+    }
   }
 
   const pollSubmissionResult = async (submissionId: string) => {
@@ -395,9 +363,15 @@ export default function ProblemPage() {
   };
 
   async function handleSubmit() {
-    if (!user) { alert('Please login to submit'); return; }
+    if (!user) {
+      alert('Please login to submit');
+      return;
+    }
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    if (!token) { alert('Please login to submit'); return; }
+    if (!token) {
+      alert('Please login to submit');
+      return;
+    }
 
     setSubmitLoading(true);
     setSubmitResult(null);
@@ -457,19 +431,60 @@ export default function ProblemPage() {
     }
   };
 
-  if (loading) return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', color: 'var(--text-muted)' }}>
-      Loading problem...
-    </div>
-  );
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const isTypingTarget = target && ['INPUT', 'TEXTAREA'].includes(target.tagName);
 
-  if (!problem) return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '80vh', color: '#ef4444' }}>
-      Problem not found
-    </div>
-  );
+      if (event.key === '?' && !isTypingTarget) {
+        event.preventDefault();
+        setShowShortcuts(true);
+        return;
+      }
 
-  const diffColor = problem.difficulty === 'EASY' ? '#22c55e' : problem.difficulty === 'MEDIUM' ? '#f59e0b' : '#ef4444';
+      if (!(event.ctrlKey || event.metaKey)) return;
+
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        void handleSubmit();
+        return;
+      }
+
+      if (event.key.toLowerCase() === 'r') {
+        event.preventDefault();
+        void handleRun();
+        return;
+      }
+
+      if (event.key.toLowerCase() === 'h') {
+        event.preventDefault();
+        document.dispatchEvent(new Event('dsa-judge:hint-shortcut'));
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleRun, handleSubmit]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-[80vh]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
+          <span className="text-slate-400 font-semibold tracking-wider text-sm uppercase">Loading Problem Workspace...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!problem) {
+    return (
+      <div className="flex justify-center items-center min-h-[80vh] text-rose-400 font-bold">
+        Problem not found.
+      </div>
+    );
+  }
+
   const sampleCases = problem.testCases || [];
   const cleanedDescription = stripInlineExamples(problem.description);
 
@@ -479,147 +494,115 @@ export default function ProblemPage() {
       data-mobile-tab={mobileTab}
       style={{ '--left-width': `${leftWidth}%` } as React.CSSProperties}
     >
-
+      {/* Mobile Navigation Tabs */}
       <div className="problem-mobile-tabs">
-        <button type="button" onClick={() => setMobileTab('problem')} className={mobileTab === 'problem' ? 'active' : ''}>Problem</button>
-        <button type="button" onClick={() => setMobileTab('code')} className={mobileTab === 'code' ? 'active' : ''}>Code</button>
-        <button type="button" onClick={() => { setMobileTab('result'); setShowOutput(true); }} className={mobileTab === 'result' ? 'active' : ''}>Result</button>
+        <button type="button" onClick={() => setMobileTab('problem')} className={mobileTab === 'problem' ? 'active' : ''}>
+          Problem
+        </button>
+        <button type="button" onClick={() => setMobileTab('code')} className={mobileTab === 'code' ? 'active' : ''}>
+          Code
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setMobileTab('result');
+            setShowOutput(true);
+          }}
+          className={mobileTab === 'result' ? 'active' : ''}
+        >
+          Result
+        </button>
       </div>
 
-      {/* LEFT PANEL — Problem description */}
-      <div className="problem-left" style={{ display: 'flex', flexDirection: 'column', borderRight: '1px solid var(--border)', overflow: 'hidden', minHeight: 0, height: '100%' }}>
-        {/* Header */}
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
-          <Link href="/problems" style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', textDecoration: 'none', fontSize: 13, marginBottom: 10 }}>
-            <ChevronLeft size={14} /> All Problems
+      {/* LEFT PANEL — Problem Description / Hints / Editorial */}
+      <div className="problem-left flex flex-col border-r border-white/10 overflow-hidden min-h-0 h-full bg-[#070818]">
+        {/* Header Bar */}
+        <div className="p-4 sm:p-5 border-b border-white/10 bg-[#090b20]">
+          <Link
+            href="/problems"
+            className="inline-flex items-center gap-1 text-slate-400 hover:text-white transition-colors text-xs font-semibold mb-2"
+          >
+            <ChevronLeft size={14} /> Back to Problems
           </Link>
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-            <h1 style={{ fontSize: 20, fontWeight: 700, color: '#fff', lineHeight: 1.3 }}>{problem.title}</h1>
-            <span style={{ background: `${diffColor}18`, color: diffColor, border: `1px solid ${diffColor}40`, borderRadius: 6, padding: '3px 10px', fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap' }}>
+          <div className="flex items-start justify-between gap-3">
+            <h1 className="text-xl sm:text-2xl font-extrabold text-white leading-snug">{problem.title}</h1>
+            <span
+              className={`px-3 py-1 rounded-full text-xs font-extrabold tracking-wide uppercase border ${
+                problem.difficulty === 'EASY'
+                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                  : problem.difficulty === 'MEDIUM'
+                  ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                  : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+              }`}
+            >
               {problem.difficulty}
             </span>
           </div>
-          <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>{problem.topic?.name}</div>
+          <div className="text-xs text-indigo-400 font-semibold mt-1">{problem.topic?.name}</div>
 
-          {/* Tabs */}
-          <div style={{ display: 'flex', gap: 4, marginTop: 14 }}>
-            {(['description', 'hints', 'editorial'] as Tab[]).map(t => (
-              <button key={t} onClick={() => setTab(t)} style={{
-                background: tab === t ? 'rgba(108,99,255,0.2)' : 'transparent',
-                color: tab === t ? '#a78bfa' : 'var(--text-muted)',
-                border: tab === t ? '1px solid rgba(108,99,255,0.4)' : '1px solid transparent',
-                borderRadius: 7, padding: '5px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: 5, fontFamily: 'inherit',
-              }}>
+          {/* Tab Navigation */}
+          <div className="flex items-center gap-2 mt-4 pt-3 border-t border-white/5">
+            {(['description', 'hints', 'editorial'] as Tab[]).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  tab === t
+                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                }`}
+              >
                 {t === 'description' && <BookOpen size={13} />}
                 {t === 'hints' && <Lightbulb size={13} />}
                 {t === 'editorial' && <BookOpen size={13} />}
                 {t.charAt(0).toUpperCase() + t.slice(1)}
-                {t === 'editorial' && !isEnrolled && <Lock size={11} />}
+                {t === 'editorial' && !isEnrolled && <Lock size={11} className="text-amber-300" />}
               </button>
             ))}
-            <div style={{ marginLeft: 'auto' }}>
+            <div className="ml-auto">
               <AIHintButton problemSlug={slug} code={code} language={language} disabled={!user} />
             </div>
           </div>
         </div>
 
-        {/* Tab content */}
-        <div className="problem-description-scroll">
-
-          {/* Description */}
+        {/* Scrollable Content View */}
+        <div className="problem-description-scroll flex-1 p-5 sm:p-6 overflow-y-auto">
           {tab === 'description' && (
-            <div>
+            <div className="space-y-6">
               <div className="prose-dark">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>{cleanedDescription}</ReactMarkdown>
               </div>
 
-              {/* Examples */}
+              {/* Sample Cases */}
               {sampleCases.length > 0 && (
-                <div style={{ marginTop: 20 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 10 }}>
-                    <div style={{ fontWeight: 600, color: '#fff' }}>Examples</div>
-                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{sampleCases.length} sample case{sampleCases.length > 1 ? 's' : ''}</div>
-                  </div>
+                <div>
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-slate-300 mb-3">Sample Test Cases</h3>
+                  <div className="space-y-4">
+                    {sampleCases.map((tc, i) => (
+                      <div key={tc.id} className="glass-card p-4 rounded-xl border border-white/10 bg-[#090b22]">
+                        <span className="px-2.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-extrabold inline-block mb-3">
+                          Example {i + 1}
+                        </span>
 
-                  <div style={{ display: 'grid', gap: 14 }}>
-                    {sampleCases.map((tc, i: number) => (
-                      <div
-                        key={tc.id}
-                        style={{
-                          border: '1px solid rgba(108,99,255,0.18)',
-                          background: 'linear-gradient(180deg, rgba(108,99,255,0.08) 0%, rgba(255,255,255,0.02) 100%)',
-                          borderRadius: 14,
-                          padding: 16,
-                          boxShadow: '0 10px 30px rgba(0,0,0,0.18)',
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span style={{ background: 'rgba(108,99,255,0.2)', color: '#c4b5fd', border: '1px solid rgba(108,99,255,0.35)', borderRadius: 999, padding: '4px 10px', fontSize: 12, fontWeight: 700 }}>
-                              Example {i + 1}
-                            </span>
-                            {tc.isSample && (
-                              <span style={{ color: '#22c55e', fontSize: 12, fontWeight: 600 }}>Sample input</span>
-                            )}
-                          </div>
-                        </div>
-
-                        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                          <div style={{ flex: '1 1 260px', minWidth: 0 }}>
-                            <div style={{ color: 'var(--text-muted)', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 6 }}>Input</div>
-                            <div style={{
-                              background: 'rgba(15,23,42,0.72)',
-                              border: '1px solid var(--border)',
-                              borderRadius: 12,
-                              padding: '12px 14px',
-                              color: '#e5e7eb',
-                              fontFamily: "'JetBrains Mono', monospace",
-                              fontSize: 13,
-                              lineHeight: 1.7,
-                              whiteSpace: 'pre-wrap',
-                              wordBreak: 'break-word',
-                            }}>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div>
+                            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Input</div>
+                            <div className="bg-[#050616] p-3 rounded-lg border border-white/5 font-mono text-xs text-slate-200 whitespace-pre-wrap">
                               {tc.input}
                             </div>
                           </div>
-
-                          <div style={{ flex: '1 1 260px', minWidth: 0 }}>
-                            <div style={{ color: 'var(--text-muted)', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 6 }}>Output</div>
-                            <div style={{
-                              background: 'rgba(15,23,42,0.72)',
-                              border: '1px solid rgba(34,197,94,0.22)',
-                              borderRadius: 12,
-                              padding: '12px 14px',
-                              color: '#86efac',
-                              fontFamily: "'JetBrains Mono', monospace",
-                              fontSize: 13,
-                              lineHeight: 1.7,
-                              whiteSpace: 'pre-wrap',
-                              wordBreak: 'break-word',
-                            }}>
+                          <div>
+                            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Expected Output</div>
+                            <div className="bg-[#050616] p-3 rounded-lg border border-emerald-500/20 font-mono text-xs text-emerald-300 whitespace-pre-wrap">
                               {tc.expectedOutput}
                             </div>
                           </div>
                         </div>
 
                         {tc.explanation && (
-                          <div style={{ marginTop: 12 }}>
-                            <div style={{ color: 'var(--text-muted)', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 6 }}>
-                              Explanation
-                            </div>
-                            <div
-                              className="prose-dark"
-                              style={{
-                                background: 'rgba(255,255,255,0.03)',
-                                border: '1px solid var(--border)',
-                                borderRadius: 12,
-                                padding: 14,
-                                fontSize: 14,
-                                lineHeight: 1.7,
-                                color: 'var(--text)',
-                              }}
-                            >
+                          <div className="mt-3 pt-3 border-t border-white/5">
+                            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Explanation</div>
+                            <div className="text-xs text-slate-300 leading-relaxed">
                               <ReactMarkdown remarkPlugins={[remarkGfm]}>{tc.explanation}</ReactMarkdown>
                             </div>
                           </div>
@@ -631,110 +614,97 @@ export default function ProblemPage() {
               )}
 
               {/* Constraints */}
-              <div style={{ marginTop: 20 }}>
-                <div style={{ fontWeight: 600, color: '#fff', marginBottom: 8 }}>Constraints</div>
-                <div className="prose-dark" style={{ fontSize: 14 }}>
+              <div>
+                <h3 className="text-sm font-bold uppercase tracking-wider text-slate-300 mb-2">Constraints</h3>
+                <div className="prose-dark text-xs sm:text-sm">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{problem.constraints}</ReactMarkdown>
                 </div>
               </div>
 
-              {/* Expected Complexity */}
-              <div style={{ marginTop: 20 }}>
-                <div style={{ fontWeight: 600, color: '#fff', marginBottom: 8 }}>Expected Complexity</div>
-                <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 10, padding: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>Targeted Time Complexity</span>
-                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 13, color: '#22c55e', background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 6, padding: '2px 10px' }}>
-                      {problem.targetedTimeComplexity || problem.optimalTimeComplexity || problem.optimalComplexity || '—'}
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>Targeted Space Complexity</span>
-                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, fontSize: 13, color: '#22c55e', background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 6, padding: '2px 10px' }}>
-                      {problem.targetedSpaceComplexity || problem.optimalSpaceComplexity || '—'}
-                    </span>
-                  </div>
+              {/* Targeted Complexity */}
+              <div className="bg-white/[0.02] border border-white/10 rounded-xl p-4 space-y-2">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-slate-400 font-medium">Targeted Time Complexity</span>
+                  <span className="font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                    {problem.targetedTimeComplexity || problem.optimalTimeComplexity || problem.optimalComplexity || 'O(N)'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-slate-400 font-medium">Targeted Space Complexity</span>
+                  <span className="font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                    {problem.targetedSpaceComplexity || problem.optimalSpaceComplexity || 'O(1)'}
+                  </span>
                 </div>
               </div>
+            </div>
+          )}
 
-              {/* Company Tags (enrolled only) - HIDDEN */}
-              {false && (problem?.companyTags?.length || 0) > 0 && (
-                <div style={{ marginTop: 20 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600, color: '#fff', marginBottom: 8 }}>
-                    <Tag size={14} /> Company Tags
-                    {!isEnrolled && <Lock size={12} color="#f59e0b" />}
-                  </div>
-                  {isEnrolled ? (
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                      {(problem?.companyTags || []).map((ct) => (
-                        <span key={ct.id} style={{ background: 'rgba(59,130,246,0.1)', color: '#60a5fa', border: '1px solid rgba(59,130,246,0.3)', borderRadius: 6, padding: '3px 10px', fontSize: 12, fontWeight: 600 }}>
-                          {ct.companyName}
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <div style={{ background: 'rgba(245,158,11,0.05)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: '#f59e0b' }}>
-                      🔒 Enroll to see which companies asked this problem
-                      <button onClick={handleEnroll} style={{ display: 'block', marginTop: 8, background: 'rgba(245,158,11,0.2)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 6, padding: '5px 14px', cursor: 'pointer', fontSize: 12, fontWeight: 600, fontFamily: 'inherit' }}>
-                        Enroll Free
-                      </button>
-                    </div>
-                  )}
+          {tab === 'hints' && (
+            <div>
+              {!user ? (
+                <div className="text-center py-12">
+                  <Lightbulb size={36} className="mx-auto text-amber-400 mb-3" />
+                  <h3 className="text-base font-bold text-white mb-1">Login to Access Progressive Hints</h3>
+                  <p className="text-xs text-slate-400 mb-4">Get 3-tier guided nudges to break down this problem.</p>
+                  <Link href="/login">
+                    <button className="btn-primary py-2 px-6 text-xs">Sign In</button>
+                  </Link>
                 </div>
+              ) : (
+                <HintPanel hints={hints} />
               )}
             </div>
           )}
 
-          {/* Hints Tab */}
-          {tab === 'hints' && (
-            <div>
-              {!user ? (
-                <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
-                  <Lightbulb size={32} style={{ margin: '0 auto 12px', display: 'block', color: '#f59e0b' }} />
-                  <div style={{ fontWeight: 600, color: '#fff', marginBottom: 8 }}>Login to view hints</div>
-                  <Link href="/login"><button className="btn-primary" style={{ marginTop: 12 }}>Login</button></Link>
-                </div>
-              ) : <HintPanel hints={hints} />}
-            </div>
-          )}
-
-          {/* Editorial Tab */}
           {tab === 'editorial' && (
             <div>
               {!isEnrolled ? (
-                <div style={{ textAlign: 'center', padding: 40 }}>
-                  <Lock size={40} style={{ margin: '0 auto 16px', display: 'block', color: '#6c63ff' }} />
-                  <div style={{ fontWeight: 700, color: '#fff', fontSize: 18, marginBottom: 8 }}>Editorial is locked</div>
-                  <div style={{ color: 'var(--text-muted)', marginBottom: 24, lineHeight: 1.6 }}>
-                    Enroll for free to access full editorial with approach explanation, code, and complexity analysis.
-                  </div>
-                  <button onClick={handleEnroll} className="btn-primary" style={{ padding: '12px 28px', fontSize: 15 }}>
+                <div className="text-center py-12">
+                  <Lock size={40} className="mx-auto text-indigo-400 mb-3" />
+                  <h3 className="text-lg font-bold text-white mb-2">Editorial is Locked</h3>
+                  <p className="text-slate-400 text-xs sm:text-sm max-w-md mx-auto mb-6">
+                    Enroll for free to unlock complete editorials, video solutions, and complexity analysis.
+                  </p>
+                  <button onClick={handleEnroll} className="btn-primary py-2.5 px-6 text-sm font-bold">
                     ✨ Enroll Free
                   </button>
                 </div>
               ) : editorialLoading ? (
-                <div style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 40 }}>Loading editorial...</div>
+                <div className="text-center py-12 text-slate-400 text-sm font-medium">Loading Editorial...</div>
               ) : editorial ? (
                 <div className="prose-dark">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{editorial.content}</ReactMarkdown>
                   {editorial.videoUrl && (
-                    <a href={editorial.videoUrl} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#a78bfa', marginTop: 16, textDecoration: 'none' }}>
+                    <a
+                      href={editorial.videoUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-2 text-indigo-400 hover:text-indigo-300 font-bold text-sm mt-4"
+                    >
                       ▶ Watch Video Solution
                     </a>
                   )}
                 </div>
               ) : (
-                <div style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 40 }}>No editorial available yet</div>
+                <div className="text-center py-12 text-slate-500 text-sm">No editorial published for this problem yet.</div>
               )}
             </div>
           )}
         </div>
       </div>
 
-      {/* RIGHT PANEL — Editor + Results */}
-      <div className="problem-right" style={{ gridTemplateRows: showOutput ? `minmax(240px, 1fr) 52px minmax(180px, ${outputHeightPercent}%)` : 'minmax(0, 1fr) 52px 0px' }}>
-        {/* Editor */}
-        <div style={{ minHeight: 0, minWidth: 0, overflow: 'hidden' }}>
+      {/* RIGHT PANEL — Monaco Code Editor & Resizable Output */}
+      <div
+        className="problem-right flex flex-col overflow-hidden bg-[#0a0c20]"
+        style={{
+          display: 'grid',
+          gridTemplateRows: showOutput
+            ? `minmax(240px, 1fr) 52px minmax(180px, ${outputHeightPercent}%)`
+            : 'minmax(0, 1fr) 52px 0px',
+        }}
+      >
+        {/* Editor Container */}
+        <div className="min-h-0 min-w-0 overflow-hidden">
           <Editor
             code={code}
             language={language}
@@ -747,122 +717,115 @@ export default function ProblemPage() {
           />
         </div>
 
-        {/* ── Permanent Action Bar (always visible) ── */}
-        <div className="action-bar" style={{
-          position: 'relative',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '8px 16px', flexShrink: 0,
-          borderTop: '1px solid var(--border)',
-          borderBottom: showOutput ? '1px solid var(--border)' : 'none',
-          background: 'var(--surface)',
-          minHeight: '52px',
-          boxSizing: 'border-box',
-        }}>
-          {/* Vertical Drag Handle (placed at the top edge of the action bar) */}
+        {/* Action Bar Bar */}
+        <div className="action-bar relative flex items-center justify-between px-4 py-2 bg-[#080a1c] border-t border-white/10 min-h-[52px]">
+          {/* Vertical Drag Handle for Output Pane */}
           {showOutput && (
             <div
               onMouseDown={startResize}
-              style={{
-                position: 'absolute',
-                top: -3,
-                left: 0,
-                right: 0,
-                height: 6,
-                cursor: 'ns-resize',
-                zIndex: 100,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: isDragging ? 'rgba(124, 58, 237, 0.2)' : 'transparent',
-                transition: 'background 0.2s',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(124, 58, 237, 0.4)';
-              }}
-              onMouseLeave={(e) => {
-                if (!isDragging) e.currentTarget.style.background = 'transparent';
-              }}
+              className={`absolute top-[-3px] left-0 right-0 h-2 cursor-ns-resize z-30 flex items-center justify-center transition-colors ${
+                isDragging ? 'bg-indigo-500/30' : 'hover:bg-indigo-500/20'
+              }`}
             >
-              {/* Visual grabber pill */}
-              <div style={{ width: 32, height: 3, borderRadius: 2, background: 'rgba(255, 255, 255, 0.15)' }} />
+              <div className="w-8 h-1 rounded-full bg-white/20" />
             </div>
           )}
-          <div style={{ display: 'flex', gap: 6 }}>
+
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => { setRunMode('sample'); setShowOutput(true); }}
-              style={{ background: runMode === 'sample' ? 'rgba(108,99,255,0.15)' : 'transparent', border: `1px solid ${runMode === 'sample' ? 'rgba(108,99,255,0.4)' : 'transparent'}`, borderRadius: 6, padding: '5px 14px', fontSize: 12, color: runMode === 'sample' ? '#a78bfa' : 'var(--text-muted)', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }}
-            >Sample Cases</button>
+              onClick={() => {
+                setRunMode('sample');
+                setShowOutput(true);
+              }}
+              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                runMode === 'sample' ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40' : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Sample Cases
+            </button>
             <button
-              onClick={() => { setRunMode('custom'); setShowOutput(true); }}
-              style={{ background: runMode === 'custom' ? 'rgba(108,99,255,0.15)' : 'transparent', border: `1px solid ${runMode === 'custom' ? 'rgba(108,99,255,0.4)' : 'transparent'}`, borderRadius: 6, padding: '5px 14px', fontSize: 12, color: runMode === 'custom' ? '#a78bfa' : 'var(--text-muted)', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }}
-            >Custom Input</button>
+              onClick={() => {
+                setRunMode('custom');
+                setShowOutput(true);
+              }}
+              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                runMode === 'custom' ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40' : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Custom Input
+            </button>
           </div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <button onClick={() => { setShowOutput(!showOutput); setMobileTab('result'); }} style={{ background: showOutput ? 'rgba(108,99,255,0.2)' : 'transparent', color: showOutput ? '#a78bfa' : 'var(--text-muted)', border: showOutput ? '1px solid rgba(108,99,255,0.4)' : '1px solid var(--border)', borderRadius: 8, padding: '6px 12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontFamily: 'inherit' }}>
-              {showOutput ? '✕ Close Output' : '○ Output'}
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                setShowOutput(!showOutput);
+                setMobileTab('result');
+              }}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer border transition-all ${
+                showOutput
+                  ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40'
+                  : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/10'
+              }`}
+            >
+              {showOutput ? '✕ Hide Output' : '○ Output'}
             </button>
-            {(runResult || submitResult) && (
-              <button onClick={() => { setRunResult(null); setSubmitResult(null); }} style={{ background: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 12px', fontWeight: 600, cursor: 'pointer', fontSize: 13, fontFamily: 'inherit' }}>
-                Clear
-              </button>
-            )}
-            <button onClick={handleRun} disabled={runLoading || submitLoading} style={{ background: 'rgba(34,197,94,0.1)', color: '#22c55e', border: '1px solid rgba(34,197,94,0.4)', borderRadius: 8, padding: '6px 18px', fontWeight: 700, cursor: runLoading ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontFamily: 'inherit', opacity: submitLoading ? 0.5 : 1 }}>
-              <Play size={14} /> {runLoading ? 'Running...' : 'Run'}
+
+            <button
+              onClick={handleRun}
+              disabled={runLoading || submitLoading}
+              className="px-4 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-bold text-xs flex items-center gap-1.5 hover:bg-emerald-500/30 transition-all cursor-pointer disabled:opacity-50"
+            >
+              <Play size={13} className="fill-current" />
+              {runLoading ? 'Running...' : 'Run'}
             </button>
-            <button onClick={handleSubmit} disabled={runLoading || submitLoading} style={{ background: '#6c63ff', color: '#fff', border: 'none', borderRadius: 8, padding: '6px 18px', fontWeight: 700, cursor: submitLoading ? 'wait' : 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontFamily: 'inherit', opacity: runLoading ? 0.5 : 1 }}>
-              <Send size={14} /> {submitLoading ? 'Judging...' : 'Submit'}
+
+            <button
+              onClick={handleSubmit}
+              disabled={runLoading || submitLoading}
+              className="btn-primary py-1.5 px-4 text-xs font-bold cursor-pointer disabled:opacity-50"
+            >
+              <Send size={13} />
+              {submitLoading ? 'Judging...' : 'Submit'}
             </button>
           </div>
         </div>
 
-        {/* Bottom collapsible output panel */}
-        <div style={{
-          background: 'var(--surface)',
-          display: 'flex',
-          flexDirection: 'column',
-          flexShrink: 0,
-          height: '100%',
-          overflowY: 'auto',
-          overflowX: 'hidden',
-          minHeight: 0,
-          position: 'relative',
-          scrollbarGutter: 'stable',
-          overscrollBehavior: 'contain',
-        }}>
-
-          {/* ── Single scrollable output body ── */}
+        {/* Collapsible Output Drawer */}
+        <div className="bg-[#050718] flex flex-col overflow-y-auto overflow-x-hidden min-h-0 relative">
           {showOutput && (
-            <div style={{
-              padding: '18px 16px 24px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 14,
-              WebkitOverflowScrolling: 'touch',
-              boxSizing: 'border-box',
-            }}>
-
-              {/* Sample Cases */}
+            <div className="p-4 space-y-4">
+              {/* Sample Test Case Selector */}
               {runMode === 'sample' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    {sampleCases.map((tc, i: number) => (
-                      <button key={i} onClick={() => setActiveTestCase(i)} style={{ background: activeTestCase === i ? 'rgba(108,99,255,0.25)' : 'var(--surface-2)', border: `1px solid ${activeTestCase === i ? 'rgba(108,99,255,0.5)' : 'var(--border)'}`, borderRadius: 7, padding: '5px 14px', fontSize: 12, color: activeTestCase === i ? '#c4b5fd' : 'var(--text-muted)', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }}>
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    {sampleCases.map((tc, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setActiveTestCase(i)}
+                        className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                          activeTestCase === i
+                            ? 'bg-indigo-500/30 text-indigo-300 border border-indigo-500/50'
+                            : 'bg-white/5 text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
                         Case {i + 1}
                       </button>
                     ))}
                   </div>
+
                   {sampleCases[activeTestCase] && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                       <div>
-                        <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 6 }}>Input</div>
-                        <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', fontFamily: "'JetBrains Mono', monospace", fontSize: 13, whiteSpace: 'pre-wrap', wordBreak: 'break-all', color: '#e5e7eb', lineHeight: 1.7 }}>
-                          {String(sampleCases[activeTestCase].input)}
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Input</div>
+                        <div className="bg-[#080a22] p-3 rounded-lg border border-white/10 font-mono text-slate-200">
+                          {sampleCases[activeTestCase].input}
                         </div>
                       </div>
                       <div>
-                        <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 6 }}>Expected Output</div>
-                        <div style={{ background: 'var(--surface-2)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 8, padding: '10px 14px', fontFamily: "'JetBrains Mono', monospace", fontSize: 13, whiteSpace: 'pre-wrap', wordBreak: 'break-all', color: '#86efac', lineHeight: 1.7 }}>
-                          {String(sampleCases[activeTestCase].expectedOutput)}
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Expected Output</div>
+                        <div className="bg-[#080a22] p-3 rounded-lg border border-emerald-500/20 font-mono text-emerald-300">
+                          {sampleCases[activeTestCase].expectedOutput}
                         </div>
                       </div>
                     </div>
@@ -870,90 +833,59 @@ export default function ProblemPage() {
                 </div>
               )}
 
-              {/* Custom Input */}
+              {/* Custom Input View */}
               {runMode === 'custom' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div className="space-y-3">
                   <div>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 6 }}>Custom Input</div>
-                    <textarea value={customInput} onChange={e => setCustomInput(e.target.value)} style={{ display: 'block', width: '100%', boxSizing: 'border-box', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', color: 'var(--text)', fontFamily: "'JetBrains Mono', monospace", fontSize: 13, resize: 'vertical', minHeight: 80, outline: 'none', lineHeight: 1.7 }} />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 6 }}>
-                      Expected Output{' '}<span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, opacity: 0.6 }}>(optional)</span>
-                    </div>
-                    <textarea value={customExpectedOutput} onChange={e => setCustomExpectedOutput(e.target.value)} placeholder="Add expected output to check verdict" style={{ display: 'block', width: '100%', boxSizing: 'border-box', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', color: 'var(--text)', fontFamily: "'JetBrains Mono', monospace", fontSize: 13, resize: 'vertical', minHeight: 64, outline: 'none', lineHeight: 1.7 }} />
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Custom Input</div>
+                    <textarea
+                      value={customInput}
+                      onChange={(e) => setCustomInput(e.target.value)}
+                      className="w-full bg-[#080a22] border border-white/10 rounded-lg p-3 text-xs font-mono text-slate-200 focus:outline-none focus:border-indigo-500"
+                      rows={3}
+                    />
                   </div>
                 </div>
               )}
 
               {/* Verdict Panel */}
               {(runResult || submitResult || runLoading || submitLoading) && (
-                <div className="flex-height" style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                  <VerdictPanel
-                    result={submitResult || runResult}
-                    loading={runLoading || submitLoading}
-                    streamStatus={streamStatus}
-                    problemSlug={slug}
-                    code={code}
-                    language={language}
-                    token={typeof window !== 'undefined' ? localStorage.getItem('token') || undefined : undefined}
-                  />
-                </div>
+                <VerdictPanel
+                  result={submitResult || runResult}
+                  loading={runLoading || submitLoading}
+                  streamStatus={streamStatus}
+                  problemSlug={slug}
+                  code={code}
+                  language={language}
+                  token={typeof window !== 'undefined' ? localStorage.getItem('token') || undefined : undefined}
+                />
               )}
 
               {/* AI Review Panel */}
               {(runResult || submitResult) && !runLoading && !submitLoading && (
-                <div className="flex-height" style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                  <AIReviewPanel
-                    problemSlug={slug}
-                    code={code}
-                    language={language}
-                    verdict={(submitResult || runResult)!.verdict}
-                    score={(submitResult || runResult)!.score}
-                    passedCases={(submitResult || runResult)!.passedCases}
-                    totalCases={(submitResult || runResult)!.totalCases}
-                    complexityEstimate={(submitResult || runResult)?.complexityEstimate}
-                    failedInput={(submitResult || runResult)?.firstFailedCase?.input}
-                    failedExpectedOutput={(submitResult || runResult)?.firstFailedCase?.expectedOutput}
-                    failedActualOutput={(submitResult || runResult)?.firstFailedCase?.actualOutput || (runResult?.output ?? undefined)}
-                    failedStderr={(submitResult || runResult)?.firstFailedCase?.stderr || (runResult?.stderr ?? undefined)}
-                  />
-                </div>
+                <AIReviewPanel
+                  problemSlug={slug}
+                  code={code}
+                  language={language}
+                  verdict={(submitResult || runResult)!.verdict}
+                  score={(submitResult || runResult)!.score}
+                  passedCases={(submitResult || runResult)!.passedCases}
+                  totalCases={(submitResult || runResult)!.totalCases}
+                  complexityEstimate={(submitResult || runResult)?.complexityEstimate}
+                  failedInput={(submitResult || runResult)?.firstFailedCase?.input}
+                  failedExpectedOutput={(submitResult || runResult)?.firstFailedCase?.expectedOutput}
+                  failedActualOutput={(submitResult || runResult)?.firstFailedCase?.actualOutput || (runResult?.output ?? undefined)}
+                  failedStderr={(submitResult || runResult)?.firstFailedCase?.stderr || (runResult?.stderr ?? undefined)}
+                />
               )}
 
-              {submitResult?.verdict === 'ACCEPTED' && (
-                <div className="flex-height" style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                  <NextProblemCard enabled={true} />
-                </div>
-              )}
-
-              {/* Program Output */}
-              {runResult?.output && !runLoading && !submitLoading && (
-                <div className="flex-height" style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 6 }}>Your Output</div>
-                  <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', fontFamily: "'JetBrains Mono', monospace", fontSize: 13, whiteSpace: 'pre-wrap', wordBreak: 'break-all', color: '#e2e2f0', lineHeight: 1.7 }}>
-                    {runResult.output}
-                  </div>
-                </div>
-              )}
-
-              {/* Stderr / Runtime Error */}
-              {runResult?.stderr && !runLoading && !submitLoading && (
-                <div>
-                  <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 6, color: runResult.verdict === 'RUNTIME_ERROR' ? '#ef4444' : 'var(--text-muted)' }}>
-                    {runResult.verdict === 'RUNTIME_ERROR' ? '⚠ Runtime Error' : 'Stderr'}
-                  </div>
-                  <div style={{ background: runResult.verdict === 'RUNTIME_ERROR' ? 'rgba(239,68,68,0.07)' : 'var(--surface-2)', border: `1px solid ${runResult.verdict === 'RUNTIME_ERROR' ? 'rgba(239,68,68,0.35)' : 'var(--border)'}`, borderRadius: 8, padding: '10px 14px', fontFamily: "'JetBrains Mono', monospace", fontSize: 13, whiteSpace: 'pre-wrap', wordBreak: 'break-word', lineHeight: 1.7, color: runResult.verdict === 'RUNTIME_ERROR' ? '#fca5a5' : '#e2e2f0' }}>
-                    {runResult.stderr}
-                  </div>
-                </div>
-              )}
-
+              {submitResult?.verdict === 'ACCEPTED' && <NextProblemCard enabled={true} />}
             </div>
           )}
         </div>
       </div>
-      {/* Vertical drag handle between left and right panels */}
+
+      {/* Resizable Divider Handle between Left and Right */}
       <div
         className="problem-layout-divider"
         onMouseDown={startWidthResize}
@@ -965,8 +897,6 @@ export default function ProblemPage() {
         onMouseEnter={() => setIsHoveringDivider(true)}
         onMouseLeave={() => setIsHoveringDivider(false)}
         role="separator"
-        aria-orientation="vertical"
-        title="Drag to resize — double-click to reset"
         style={{
           position: 'absolute',
           top: 0,
@@ -978,17 +908,12 @@ export default function ProblemPage() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          pointerEvents: 'auto',
         }}
       >
-        <div style={{ width: 2, height: 48, background: isHoveringDivider ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.04)', borderRadius: 2, transition: 'background 120ms' }} />
-        <div style={{ position: 'absolute', left: '50%', top: '12px', transform: 'translateX(-50%)', pointerEvents: 'none', display: isHoveringDivider ? 'block' : 'none' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(0,0,0,0.6)', color: '#fff', padding: '6px 10px', borderRadius: 8, fontSize: 12, boxShadow: '0 6px 20px rgba(0,0,0,0.4)' }}>
-            <GripVertical size={14} color="rgba(255,255,255,0.9)" />
-            <div style={{ whiteSpace: 'nowrap' }}>Drag to resize · Double-click to reset</div>
-          </div>
-        </div>
+        <div className={`w-0.5 h-12 rounded-full transition-colors ${isHoveringDivider ? 'bg-indigo-500' : 'bg-white/10'}`} />
       </div>
+
+      {/* AI Assistant Floating Chat Panel */}
       <AIChatPanel
         problemSlug={slug}
         problemTitle={problem.title}
@@ -998,29 +923,32 @@ export default function ProblemPage() {
         disabled={!user}
       />
 
+      {/* Keyboard Shortcuts Modal */}
       {showShortcuts && (
         <div
-          style={{ position: 'fixed', inset: 0, zIndex: 1200, background: 'rgba(2,6,23,0.72)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+          className="fixed inset-0 z-[1200] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
           onClick={() => setShowShortcuts(false)}
         >
           <div
-            style={{ width: 'min(560px, 100%)', background: 'linear-gradient(180deg, rgba(15, 15, 30, 0.98) 0%, rgba(7, 11, 23, 0.98) 100%)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 20, padding: 24, boxShadow: '0 30px 80px rgba(0,0,0,0.5)' }}
+            className="glass-panel w-full max-w-md p-6 rounded-2xl border border-white/10 bg-[#090b22]"
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-              <div style={{ fontSize: 18, fontWeight: 800, color: '#fff' }}>Keyboard Shortcuts</div>
-              <button onClick={() => setShowShortcuts(false)} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: 'var(--text-muted)', borderRadius: 10, padding: '6px 10px', cursor: 'pointer' }}>Close</button>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-white">Keyboard Shortcuts</h3>
+              <button onClick={() => setShowShortcuts(false)} className="text-slate-400 hover:text-white cursor-pointer">
+                <X size={18} />
+              </button>
             </div>
-            <div style={{ display: 'grid', gap: 12 }}>
+            <div className="space-y-3">
               {[
-                ['Ctrl/Cmd + Enter', 'Submit code'],
-                ['Ctrl/Cmd + R', 'Run sample tests'],
-                ['Ctrl/Cmd + H', 'Get a hint'],
-                ['?', 'Open this shortcuts panel'],
-              ].map(([keys, action]) => (
-                <div key={keys} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '12px 14px', borderRadius: 14, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                  <div style={{ color: '#e2e8f0', fontWeight: 700 }}>{action}</div>
-                  <div style={{ color: '#c4b5fd', fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>{keys}</div>
+                ['Ctrl / Cmd + Enter', 'Submit code to judge'],
+                ['Ctrl / Cmd + R', 'Run sample test cases'],
+                ['Ctrl / Cmd + H', 'Request AI hint'],
+                ['?', 'Toggle shortcut reference'],
+              ].map(([key, desc]) => (
+                <div key={key} className="flex justify-between items-center p-3 rounded-xl bg-white/5 text-xs">
+                  <span className="font-semibold text-slate-200">{desc}</span>
+                  <span className="font-mono text-indigo-300 font-bold bg-indigo-500/20 px-2 py-1 rounded">{key}</span>
                 </div>
               ))}
             </div>
@@ -1028,163 +956,57 @@ export default function ProblemPage() {
         </div>
       )}
 
+      {/* Layout CSS Rules */}
       <style jsx>{`
         .problem-layout {
           display: grid;
-          grid-template-columns: minmax(340px, var(--left-width, 42%)) minmax(0, 1fr);
+          grid-template-columns: minmax(320px, var(--left-width, 42%)) minmax(0, 1fr);
           height: calc(100dvh - 64px);
           min-height: 0;
           position: relative;
           overflow: hidden;
-          transition: grid-template-columns 140ms ease;
         }
-
-        .problem-left,
-        .problem-right {
-          min-width: 0;
-          min-height: 0;
-        }
-
-        .problem-right {
-          display: grid;
-          overflow: hidden;
-          background: var(--surface);
-          height: 100%;
-        }
-
-        .problem-description-scroll {
-          flex: 1;
-          min-height: 0;
-          overflow-y: auto;
-          overflow-x: hidden;
-          padding: 24px 24px 48px;
-          overscroll-behavior: contain;
-        }
-
-        .action-bar {
-          flex-wrap: wrap;
-          row-gap: 8px;
-        }
-
-        .mode-toggle {
-          transition: all 0.2s ease;
-        }
-
-        @media (max-width: 1200px) {
-          .problem-layout {
-            grid-template-columns: minmax(320px, var(--left-width, 46%)) minmax(0, 1fr);
-          }
-        }
-
-        @media (max-width: 980px) {
-          .problem-layout {
-            grid-template-columns: 1fr;
-            grid-template-rows: minmax(360px, 46%) minmax(440px, 54%);
-            height: auto;
-            min-height: calc(100dvh - 64px);
-            overflow: visible;
-          }
-
-          .problem-left {
-            border-right: none;
-            border-bottom: 1px solid var(--border);
-            min-height: 480px;
-          }
-
-          .problem-right {
-            min-height: 640px;
-          }
-
-          .problem-layout-divider {
-            display: none !important;
-          }
-
-          .action-bar {
-            padding: 10px 12px;
-          }
-        }
-
-        @media (max-width: 720px) {
-          .problem-layout {
-            display: flex;
-            flex-direction: column;
-          }
-
-          .problem-left {
-            height: min(68dvh, 720px) !important;
-            min-height: 480px;
-          }
-
-          .problem-right {
-            height: max(720px, calc(100dvh - 64px)) !important;
-            min-height: 720px;
-          }
-
-          .action-bar {
-            flex-wrap: wrap;
-            row-gap: 8px;
-            min-height: 96px !important;
-          }
-
-          .action-bar > :global(div) {
-            width: 100%;
-            justify-content: space-between;
-          }
-        }
-
-        /* Thin scrollbar for output panel */
-        .problem-right ::-webkit-scrollbar { width: 5px; height: 5px; }
-        .problem-right ::-webkit-scrollbar-track { background: transparent; }
-        .problem-right ::-webkit-scrollbar-thumb { background: rgba(108,99,255,0.35); border-radius: 8px; }
-        .problem-right ::-webkit-scrollbar-thumb:hover { background: rgba(108,99,255,0.6); }
-        /* Make panels inside the output area shrink properly when the editor is resized */
-        .problem-right .flex-card { min-width: 0; }
-        .problem-right .flex-height { min-height: 0; flex: 1 1 0; display: flex; flex-direction: column; }
 
         .problem-mobile-tabs {
           display: none;
         }
 
-        @media (max-width: 720px) {
+        @media (max-width: 980px) {
+          .problem-layout {
+            display: flex;
+            flex-direction: column;
+            height: auto;
+            min-height: calc(100dvh - 64px);
+          }
+          .problem-layout-divider {
+            display: none !important;
+          }
           .problem-mobile-tabs {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            padding: 12px;
-            position: sticky;
-            top: 64px;
-            z-index: 80;
-            background: rgba(3, 0, 20, 0.92);
-            backdrop-filter: blur(14px);
-            border-bottom: 1px solid rgba(255,255,255,0.06);
+            gap: 6px;
+            padding: 8px;
+            background: #050616;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
           }
-
           .problem-mobile-tabs button {
-            border: 1px solid rgba(255,255,255,0.08);
-            background: rgba(255,255,255,0.03);
-            color: var(--text-muted);
-            border-radius: 12px;
-            padding: 10px 12px;
-            font: inherit;
+            padding: 8px;
+            font-size: 12px;
             font-weight: 700;
+            color: #9494c7;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
           }
-
           .problem-mobile-tabs button.active {
-            background: linear-gradient(135deg, rgba(124,58,237,0.35), rgba(79,70,229,0.35));
+            background: #7c3aed;
             color: #fff;
-            border-color: rgba(124,58,237,0.45);
+            border-color: #7c3aed;
           }
-
           .problem-layout[data-mobile-tab='problem'] .problem-right,
           .problem-layout[data-mobile-tab='code'] .problem-left,
           .problem-layout[data-mobile-tab='result'] .problem-left {
             display: none !important;
-          }
-
-          .problem-layout[data-mobile-tab='problem'] .problem-left,
-          .problem-layout[data-mobile-tab='code'] .problem-right,
-          .problem-layout[data-mobile-tab='result'] .problem-right {
-            display: flex !important;
           }
         }
       `}</style>

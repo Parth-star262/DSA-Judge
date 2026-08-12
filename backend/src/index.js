@@ -15,6 +15,7 @@ const featuresRoutes = require('./routes/features');
 const adminRoutes = require('./routes/admin');
 const aiRoutes = require('./routes/ai');
 const contestRoutes = require('./routes/contests'); // Phase 4
+const coachRoutes = require('./routes/interviewCoach'); // Phase 5: AI Coach
 
 const app = express();
 
@@ -34,6 +35,7 @@ app.use('/api/submissions', submissionRoutes); // submissionLimiter applied per 
 app.use('/api/enrollment', enrollmentRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/ai', aiLimiter, aiRoutes);
+app.use('/api/coach', aiLimiter, coachRoutes);
 app.use('/api/contests', contestRoutes);
 app.use('/api', featuresRoutes);
 
