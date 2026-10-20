@@ -1,50 +1,18 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { AnimatePresence, motion } from 'framer-motion';
-import {
-  Bot,
-  Code2,
-  LogOut,
-  Menu,
-  Shield,
-  Sparkles,
-  Sun,
-  Trophy,
-  User,
-  X,
-  Zap,
-} from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-
-const portfolioLinks = [
-  { name: 'Home', href: '#home' },
-  { name: 'Projects', href: '#projects' },
-  { name: 'Skills', href: '#skills' },
-  { name: 'About', href: '#about' },
-  { name: 'Contact', href: '#contact' },
-];
-
-const appLinks = [
-  { name: 'Problems', href: '/problems', icon: Code2 },
-  { name: 'AI Coach', href: '/interview', icon: Sparkles },
-  { name: 'Leaderboard', href: '/leaderboard', icon: Trophy },
-];
+import { Code2, LogOut, User, Zap, Sparkles, Trophy, LayoutDashboard, Shield } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export default function Navbar() {
   const { user, logout, enroll, isEnrolled } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const isPortfolio = pathname === '/';
-
-  const closeMobile = () => setMobileOpen(false);
 
   const handleLogout = () => {
     logout();
-    closeMobile();
     router.push('/');
   };
 
@@ -58,110 +26,76 @@ export default function Navbar() {
     }
   };
 
-  const brand = isPortfolio ? (
-    <Link href="/" className="flex items-center gap-2 group" onClick={closeMobile}>
-      <div className="text-2xl font-black tracking-tight text-white font-['Outfit']">
-        Parth<span className="text-indigo-400">.</span>
-      </div>
-    </Link>
-  ) : (
-    <Link href="/" className="flex items-center gap-3 group" onClick={closeMobile}>
-      <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 p-[1px] shadow-lg shadow-indigo-500/20 group-hover:shadow-indigo-500/40 transition-all duration-300">
-        <div className="w-full h-full bg-[#070818] rounded-[11px] flex items-center justify-center group-hover:bg-transparent transition-colors">
-          <Code2 size={22} className="text-indigo-400 group-hover:text-white transition-colors" />
-        </div>
-      </div>
-      <span className="font-extrabold text-xl font-['Outfit'] tracking-tight text-white">
-        DSA<span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">Judge</span>
-      </span>
-    </Link>
-  );
+  const navLinks = [
+    { name: 'Problems', href: '/problems', icon: Code2 },
+    { name: 'AI Coach', href: '/interview', icon: Sparkles },
+    { name: 'Leaderboard', href: '/leaderboard', icon: Trophy },
+  ];
 
   return (
-    <header className={`sticky top-0 z-50 w-full border-b backdrop-blur-2xl ${
-      isPortfolio
-        ? 'border-white/10 bg-[#030014]/85 text-white'
-        : 'border-white/10 bg-[#030014]/80 text-white supports-[backdrop-filter]:bg-[#030014]/60'
-    }`}>
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        {brand}
+    <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-[#030014]/80 backdrop-blur-2xl supports-[backdrop-filter]:bg-[#030014]/60">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+        
+        {/* Brand Logo */}
+        <Link href="/" className="flex items-center gap-3 group">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 p-[1px] shadow-lg shadow-indigo-500/20 group-hover:shadow-indigo-500/40 transition-all duration-300">
+            <div className="w-full h-full bg-[#070818] rounded-[11px] flex items-center justify-center group-hover:bg-transparent transition-colors">
+              <Code2 size={22} className="text-indigo-400 group-hover:text-white transition-colors" />
+            </div>
+          </div>
+          <div className="flex flex-col">
+            <span className="font-extrabold text-xl font-['Outfit'] tracking-tight text-white flex items-center gap-1">
+              DSA<span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">Judge</span>
+              <span className="px-1.5 py-0.5 rounded text-[10px] font-extrabold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">PRO</span>
+            </span>
+          </div>
+        </Link>
 
-        {isPortfolio ? (
-          <nav className="hidden items-center gap-7 md:flex">
-            {portfolioLinks.map((link) => (
-              <a
+        {/* Navigation Links */}
+        <nav className="hidden md:flex items-center gap-1 bg-white/[0.03] p-1 rounded-full border border-white/10 backdrop-blur-md">
+          {navLinks.map((link) => {
+            const Icon = link.icon;
+            const isActive = pathname === link.href || pathname.startsWith(`${link.href}/`);
+            return (
+              <Link
                 key={link.href}
                 href={link.href}
-                className="text-sm font-medium text-slate-300 transition-colors duration-200 hover:text-white"
-              >
-                {link.name}
-              </a>
-            ))}
-          </nav>
-        ) : (
-          <nav className="hidden md:flex items-center gap-1 bg-white/[0.03] p-1 rounded-full border border-white/10 backdrop-blur-md">
-            {appLinks.map((link) => {
-              const Icon = link.icon;
-              const isActive = pathname === link.href || pathname.startsWith(`${link.href}/`);
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`relative px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-300 flex items-center gap-2 ${
-                    isActive ? 'text-white' : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  {isActive && (
-                    <motion.div
-                      layoutId="activeNav"
-                      className="absolute inset-0 bg-gradient-to-r from-indigo-600/80 to-purple-600/80 rounded-full shadow-md shadow-indigo-500/25"
-                      transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                    />
-                  )}
-                  <span className="relative z-10 flex items-center gap-2">
-                    <Icon size={15} className={isActive ? 'text-white' : 'text-slate-400'} />
-                    {link.name}
-                  </span>
-                </Link>
-              );
-            })}
-
-            {user?.role === 'ADMIN' && (
-              <Link
-                href="/admin"
                 className={`relative px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-300 flex items-center gap-2 ${
-                  pathname.startsWith('/admin') ? 'text-amber-300' : 'text-amber-400/80 hover:text-amber-300'
+                  isActive ? 'text-white' : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
-                <Shield size={15} />
-                Admin
+                {isActive && (
+                  <motion.div
+                    layoutId="activeNav"
+                    className="absolute inset-0 bg-gradient-to-r from-indigo-600/80 to-purple-600/80 rounded-full shadow-md shadow-indigo-500/25"
+                    transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                  />
+                )}
+                <span className="relative z-10 flex items-center gap-2">
+                  <Icon size={15} className={isActive ? 'text-white' : 'text-slate-400'} />
+                  {link.name}
+                </span>
               </Link>
-            )}
-          </nav>
-        )}
+            );
+          })}
 
-        <div className="hidden items-center gap-2.5 md:flex">
-          {isPortfolio ? (
-            <>
-              <Link
-                href="/problems"
-                className="inline-flex items-center gap-1.5 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-3.5 py-1.5 text-xs font-semibold text-indigo-300 transition hover:bg-indigo-500/20 hover:border-indigo-500/50"
-              >
-                <Code2 size={13} />
-                <span>DSA-Judge</span>
-                <span className="text-[10px] text-indigo-400">↗</span>
-              </Link>
-              <a
-                href="/resume"
-                download
-                className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-1.5 text-xs font-bold text-slate-900 shadow transition hover:bg-slate-200 active:scale-[0.98]"
-              >
-                <span>Resume</span>
-                <span>↓</span>
-              </a>
-            </>
-          ) : user ? (
-            <>
+          {user?.role === 'ADMIN' && (
+            <Link
+              href="/admin"
+              className={`relative px-4 py-1.5 rounded-full text-sm font-semibold transition-all duration-300 flex items-center gap-2 ${
+                pathname.startsWith('/admin') ? 'text-amber-300' : 'text-amber-400/80 hover:text-amber-300'
+              }`}
+            >
+              <Shield size={15} />
+              Admin
+            </Link>
+          )}
+        </nav>
+
+        {/* Actions & User State */}
+        <div className="flex items-center gap-3">
+          {user ? (
+            <div className="flex items-center gap-3">
               {!isEnrolled ? (
                 <button
                   onClick={handleEnroll}
@@ -176,97 +110,60 @@ export default function Navbar() {
                 </div>
               )}
 
-              <Link href="/profile" className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 transition-colors">
+              <Link
+                href="/profile"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 transition-colors"
+              >
                 <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold shadow-inner">
                   {user.name ? user.name.charAt(0).toUpperCase() : <User size={12} />}
                 </div>
                 <span className="hidden sm:block text-xs font-semibold text-slate-200">{user.name}</span>
               </Link>
 
-              <button onClick={handleLogout} className="p-2 rounded-full text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors" title="Logout">
+              <button
+                onClick={handleLogout}
+                className="p-2 rounded-full text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+                title="Logout"
+              >
                 <LogOut size={17} />
               </button>
-            </>
+            </div>
           ) : (
-            <>
-              <Link href="/login" className="text-xs font-semibold text-slate-300 hover:text-white px-4 py-2 rounded-full hover:bg-white/5 transition-colors">
-                Sign In
+            <div className="flex items-center gap-2">
+              <Link href="/login">
+                <button className="text-xs font-semibold text-slate-300 hover:text-white px-4 py-2 rounded-full hover:bg-white/5 transition-colors cursor-pointer">
+                  Sign In
+                </button>
               </Link>
-              <Link href="/register" className="btn-primary py-1.5 px-4 text-xs font-bold">
-                Get Started
+              <Link href="/register">
+                <button className="btn-primary py-1.5 px-4 text-xs font-bold cursor-pointer">
+                  Get Started
+                </button>
               </Link>
-            </>
+            </div>
           )}
         </div>
-
-        <button
-          type="button"
-          onClick={() => setMobileOpen((open) => !open)}
-          className={`inline-flex h-10 w-10 items-center justify-center rounded-lg border md:hidden ${
-            isPortfolio ? 'border-white/20 bg-white/5 text-white' : 'border-white/10 bg-white/[0.04] text-white'
-          }`}
-          aria-label="Toggle navigation"
-        >
-          {mobileOpen ? <X size={20} /> : <Menu size={20} />}
-        </button>
       </div>
 
-      <AnimatePresence>
-        {mobileOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className={`overflow-hidden border-t md:hidden ${isPortfolio ? 'border-white/10 bg-[#0b1428]' : 'border-white/10 bg-[#07091b]'}`}
-          >
-            <div className="mx-auto max-w-7xl px-4 py-3">
-              {isPortfolio ? (
-                <div className="grid gap-1">
-                  {portfolioLinks.map((link) => (
-                    <a key={link.href} href={link.href} onClick={closeMobile} className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-300 hover:bg-white/10 hover:text-white">
-                      {link.name}
-                    </a>
-                  ))}
-                  <Link href="/problems" onClick={closeMobile} className="btn-primary mt-2 rounded-lg py-2">
-                    <Bot size={16} />
-                    <span>Launch DSA Judge</span>
-                  </Link>
-                  <a href="/resume" download onClick={closeMobile} className="btn-ghost mt-1 rounded-lg py-2 text-sm">Resume ↓</a>
-                </div>
-              ) : (
-                <div className="grid gap-1">
-                  {appLinks.map((link) => {
-                    const Icon = link.icon;
-                    return (
-                      <Link key={link.href} href={link.href} onClick={closeMobile} className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-slate-300 hover:bg-white/[0.06] hover:text-white">
-                        <Icon size={16} />
-                        {link.name}
-                      </Link>
-                    );
-                  })}
-                  {user?.role === 'ADMIN' && (
-                    <Link href="/admin" onClick={closeMobile} className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-amber-300 hover:bg-white/[0.06]">
-                      <Shield size={16} />
-                      Admin
-                    </Link>
-                  )}
-                  {user ? (
-                    <button onClick={handleLogout} className="mt-2 flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-300 hover:bg-red-500/10">
-                      <LogOut size={16} />
-                      Logout
-                    </button>
-                  ) : (
-                    <div className="mt-2 grid grid-cols-2 gap-2">
-                      <Link href="/login" onClick={closeMobile} className="btn-ghost rounded-lg py-2 text-sm">Sign In</Link>
-                      <Link href="/register" onClick={closeMobile} className="btn-primary rounded-lg py-2 text-sm">Get Started</Link>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Mobile Sub-Navigation Bar */}
+      <div className="md:hidden flex items-center justify-around border-t border-white/5 px-2 py-2 bg-[#07091b]">
+        {navLinks.map((link) => {
+          const Icon = link.icon;
+          const isActive = pathname === link.href || pathname.startsWith(`${link.href}/`);
+          return (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold ${
+                isActive ? 'text-indigo-400 bg-indigo-500/10' : 'text-slate-400'
+              }`}
+            >
+              <Icon size={14} />
+              {link.name}
+            </Link>
+          );
+        })}
+      </div>
     </header>
   );
 }

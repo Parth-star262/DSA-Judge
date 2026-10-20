@@ -1,782 +1,396 @@
 'use client';
 
-import { FormEvent, useMemo, useState } from 'react';
-import Image from 'next/image';
-import { motion, type Variants } from 'framer-motion';
+import { useState } from 'react';
+import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
-	ArrowRight,
-	ArrowUpRight,
-	Bot,
-	Briefcase,
-	CheckCircle2,
-	Code2,
-	Cpu,
-	Database,
-	Download,
-	ExternalLink,
-	Globe,
-	GraduationCap,
-	Layers,
-	Mail,
-	MapPin,
-	Send,
-	Sparkles,
-	Terminal,
-	Trophy,
+  Code2, Zap, BarChart3, Lightbulb, BookOpen, ChevronRight, CheckCircle2,
+  ArrowRight, Sparkles, Terminal, Cpu, ShieldCheck, Play, Layers, Flame, Trophy,
+  Bot, RefreshCw
 } from 'lucide-react';
 
-function GithubIcon({ size = 16, className = '' }: { size?: number; className?: string }) {
-	return (
-		<svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}>
-			<path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
-		</svg>
-	);
-}
+import LiveTheme from '@/components/LiveTheme';
 
-function LinkedinIcon({ size = 16, className = '' }: { size?: number; className?: string }) {
-	return (
-		<svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" className={className}>
-			<path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.46 10.9h2.79v8.37H6.46v-8.37M7.86 6.3a1.64 1.64 0 1 0 0 3.28 1.64 1.64 0 0 0 0-3.28z" />
-		</svg>
-	);
-}
+export default function HomePage() {
+  const [activeTab, setActiveTab] = useState<'judge' | 'interview' | 'ai' | 'analytics'>('judge');
+  const [demoLang, setDemoLang] = useState<'cpp' | 'python' | 'java'>('cpp');
+  const [demoRunning, setDemoRunning] = useState(false);
+  const [demoPassed, setDemoPassed] = useState(true);
 
-const launchUrl = 'https://dsa-judge.vercel.app/problems';
-const repoUrl = 'https://github.com/Parth-star262/DSA-Judge';
-const resumeUrl = '/resume';
+  const demoCodes = {
+    cpp: `#include <bits/stdc++.h>\nusing namespace std;\n\nclass Solution {\npublic:\n    vector<int> twoSum(vector<int>& nums, int target) {\n        unordered_map<int, int> mp;\n        for (int i = 0; i < nums.size(); i++) {\n            int diff = target - nums[i];\n            if (mp.count(diff)) return {mp[diff], i};\n            mp[nums[i]] = i;\n        }\n        return {};\n    }\n};`,
+    python: `def two_sum(nums, target):\n    seen = {}\n    for i, num in enumerate(nums):\n        diff = target - num\n        if diff in seen:\n            return [seen[diff], i]\n        seen[num] = i\n    return []`,
+    java: `import java.util.*;\n\nclass Solution {\n    public int[] twoSum(int[] nums, int target) {\n        Map<Integer, Integer> map = new HashMap<>();\n        for (int i = 0; i < nums.length; i++) {\n            int diff = target - nums[i];\n            if (map.containsKey(diff)) return new int[]{map.get(diff), i};\n            map.put(nums[i], i);\n        }\n        return new int[0];\n    }\n}`
+  };
 
-const techStack = [
-	{ name: 'JavaScript', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg' },
-	{ name: 'TypeScript', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg' },
-	{ name: 'React', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg' },
-	{ name: 'Next.js', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nextjs/nextjs-original.svg' },
-	{ name: 'Node.js', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nodejs/nodejs-original.svg' },
-	{ name: 'Express', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/express/express-original.svg' },
-	{ name: 'PostgreSQL', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/postgresql/postgresql-original.svg' },
-	{ name: 'Prisma', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/prisma/prisma-original.svg' },
-	{ name: 'Docker', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/docker/docker-original.svg' },
-	{ name: 'Redis', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/redis/redis-original.svg' },
-	{ name: 'Tailwind', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/tailwindcss/tailwindcss-original.svg' },
-	{ name: 'C++', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cplusplus/cplusplus-original.svg' },
-];
+  const handleRunDemo = () => {
+    setDemoRunning(true);
+    setTimeout(() => {
+      setDemoRunning(false);
+      setDemoPassed(true);
+    }, 1200);
+  };
 
-const skillCategories = [
-	{
-		title: 'Languages',
-		icon: Code2,
-		skills: ['TypeScript', 'JavaScript', 'C++', 'Python', 'SQL'],
-		badgeColor: 'border-blue-500/30 text-blue-300 bg-blue-500/10',
-	},
-	{
-		title: 'Frontend Development',
-		icon: Globe,
-		skills: ['React.js', 'Next.js (App Router)', 'Tailwind CSS', 'Monaco Editor', 'Framer Motion'],
-		badgeColor: 'border-purple-500/30 text-purple-300 bg-purple-500/10',
-	},
-	{
-		title: 'Backend & Databases',
-		icon: Database,
-		skills: ['Node.js', 'Express.js', 'PostgreSQL', 'Prisma ORM', 'Redis', 'REST APIs'],
-		badgeColor: 'border-emerald-500/30 text-emerald-300 bg-emerald-500/10',
-	},
-	{
-		title: 'DevOps & AI Systems',
-		icon: Cpu,
-		skills: ['Docker', 'Gemini AI API', 'Sandboxed Code Exec', 'Git & GitHub', 'Vercel / Render'],
-		badgeColor: 'border-amber-500/30 text-amber-300 bg-amber-500/10',
-	},
-];
+  const metrics = [
+    { label: 'Curated Problems', val: '250+', sub: 'Striver A2Z aligned' },
+    { label: 'Execution Runtimes', val: '4 Languages', sub: 'C++, Java, Python, JS' },
+    { label: 'Judge Latency', val: '< 200ms', sub: 'Isolated sandbox runner' },
+    { label: 'AI Assistance', val: '24/7 Coach', sub: 'Gemini 1.5 Powered' },
+  ];
 
-const dsaJudgeFeatures = [
-	{
-		title: 'Isolated Multi-Language Sandbox',
-		desc: 'Executes C++, Java, Python, and JavaScript safely with precise wall-time and memory enforcement.',
-		icon: Terminal,
-	},
-	{
-		title: 'AI Mock Technical Interviews',
-		desc: 'Simulates interactive hiring rounds with adaptive feedback on edge-cases, data structures, and trade-offs.',
-		icon: Bot,
-	},
-	{
-		title: 'Automated Code Review & Hints',
-		desc: 'Analyzes asymptotic time/space complexity and guides problem solving without spoiling the full solution.',
-		icon: Sparkles,
-	},
-	{
-		title: 'Comprehensive Performance Tracking',
-		desc: 'Detailed submission history, verdict breakdowns, and consistency charts for continuous practice.',
-		icon: Layers,
-	},
-];
+  const features = [
+    {
+      id: 'judge',
+      title: 'Real Code Execution Engine',
+      subtitle: 'Native compilation & multi-test evaluation',
+      desc: 'Submit solution code across C++, Java, Python, or JS. Your code is executed against strict test cases with sub-second feedback, memory limits, and execution timers.',
+      icon: Terminal,
+      badge: 'Isolated Runner',
+      color: 'from-emerald-500 to-teal-600'
+    },
+    {
+      id: 'interview',
+      title: 'AI Mock Technical Interviewer',
+      subtitle: 'Simulate high-stakes coding interviews',
+      desc: 'Practice technical interviews with an AI coach that asks clarifying questions, probes edge cases, evaluates time complexity, and gives detailed scorecard feedback.',
+      icon: Bot,
+      badge: 'Interactive Audio/Text',
+      color: 'from-indigo-500 to-purple-600'
+    },
+    {
+      id: 'ai',
+      title: '3-Tier Hints & AI Code Review',
+      subtitle: 'Never stay stuck on a problem',
+      desc: 'Get progressive hint nudges without giving away full solutions. Analyze your time/space complexity O(N) automatically and receive AI refactoring tips.',
+      icon: Sparkles,
+      badge: 'Smart Assistance',
+      color: 'from-amber-500 to-orange-600'
+    },
+    {
+      id: 'analytics',
+      title: 'Radar Charts & Activity Heatmaps',
+      subtitle: 'Comprehensive skill tracking',
+      desc: 'Track topic mastery across Arrays, DP, Graphs, and Trees. View your submission streak, external platform ranks (LeetCode/GFG), and badge accomplishments.',
+      icon: BarChart3,
+      badge: 'Visual Insights',
+      color: 'from-pink-500 to-rose-600'
+    }
+  ];
 
-const fadeUpVariant: Variants = {
-	hidden: { opacity: 0, y: 24 },
-	visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
-};
+  const topics = ['Arrays', 'Strings', 'Binary Search', 'Linked Lists', 'Trees & BST', 'Graphs', 'Dynamic Programming', 'Heaps & Tries'];
 
-export default function PortfolioHomePage() {
-	const [formName, setFormName] = useState('');
-	const [formEmail, setFormEmail] = useState('');
-	const [formMessage, setFormMessage] = useState('');
-	const [copiedEmail, setCopiedEmail] = useState(false);
+  return (
+    <div className="min-h-screen relative overflow-hidden bg-[#030014] text-white selection:bg-purple-500/30 selection:text-white">
+      <LiveTheme />
 
-	const myEmail = '202451124@iiitvadodara.ac.in';
+      {/* Hero Section */}
+      <section className="relative z-10 pt-20 pb-16 px-4 sm:px-6 md:px-12 max-w-7xl mx-auto flex flex-col items-center justify-center text-center">
+        {/* Floating Announcement Badge */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 border border-indigo-500/30 rounded-full py-2 px-5 mb-8 text-xs sm:text-sm font-semibold text-indigo-300 backdrop-blur-xl shadow-lg shadow-indigo-500/10"
+        >
+          <Sparkles size={16} className="text-indigo-400 animate-pulse" />
+          <span>Production-Ready Online Judge & AI Technical Coach</span>
+          <span className="bg-indigo-500/20 text-indigo-200 text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">v2.0</span>
+        </motion.div>
 
-	const mailtoHref = useMemo(() => {
-		const subject = encodeURIComponent(`Portfolio Message from ${formName || 'Visitor'}`);
-		const body = encodeURIComponent(
-			`Hi Parth,\n\n${formMessage || ''}\n\nFrom: ${formName || 'Visitor'}\nEmail: ${formEmail || 'Not provided'}`,
-		);
-		return `mailto:${myEmail}?subject=${subject}&body=${body}`;
-	}, [formEmail, formMessage, formName]);
+        {/* Hero Title */}
+        <motion.h1
+          className="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight mb-6 leading-[1.1] max-w-5xl font-['Outfit']"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+        >
+          Crack Your Technical Interviews With <br className="hidden sm:block" />
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">
+            Real Code Execution & AI Coaching
+          </span>
+        </motion.h1>
 
-	const submitContact = (event: FormEvent<HTMLFormElement>) => {
-		event.preventDefault();
-		window.location.href = mailtoHref;
-	};
+        {/* Hero Description */}
+        <motion.p
+          className="text-base sm:text-xl text-slate-400 max-w-3xl mb-10 leading-relaxed font-light"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+        >
+          Engineered for developers mastering Data Structures & Algorithms. Run C++, Java, Python, and JavaScript against hidden test suites, receive progressive AI hints, and practice live mock technical interviews.
+        </motion.p>
 
-	const copyEmail = () => {
-		navigator.clipboard.writeText(myEmail);
-		setCopiedEmail(true);
-		setTimeout(() => setCopiedEmail(false), 2200);
-	};
+        {/* Hero CTA Buttons */}
+        <motion.div
+          className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto mb-16"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+        >
+          <Link href="/problems">
+            <button className="w-full sm:w-auto btn-primary py-3.5 px-8 text-base font-bold shadow-xl shadow-indigo-500/30 hover:shadow-indigo-500/50 cursor-pointer">
+              <span>Start Solving Problems</span>
+              <ChevronRight size={18} />
+            </button>
+          </Link>
 
-	return (
-		<div className="portfolio-shell min-h-screen bg-[#030014] text-[#eef1f8] selection:bg-purple-600/40 selection:text-white">
-			{/* Ambient background glows */}
-			<div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-				<div className="absolute top-[-10%] left-[15%] h-[550px] w-[550px] rounded-full bg-gradient-to-br from-indigo-600/15 via-purple-600/10 to-transparent blur-[120px]" />
-				<div className="absolute top-[35%] right-[-5%] h-[600px] w-[600px] rounded-full bg-gradient-to-bl from-pink-600/10 via-purple-600/10 to-transparent blur-[140px]" />
-				<div className="absolute bottom-[5%] left-[-10%] h-[500px] w-[500px] rounded-full bg-gradient-to-tr from-cyan-600/10 via-indigo-600/10 to-transparent blur-[130px]" />
-				<div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
-			</div>
+          <Link href="/interview">
+            <button className="w-full sm:w-auto btn-ghost py-3.5 px-8 text-base font-semibold border-indigo-500/30 hover:border-indigo-500/60 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-200 cursor-pointer">
+              <Bot size={18} className="text-indigo-400" />
+              <span>Practice AI Mock Interview</span>
+            </button>
+          </Link>
+        </motion.div>
 
-			{/* ================= HERO SECTION ================= */}
-			<section id="home" className="relative px-4 pt-10 pb-16 sm:px-6 md:pt-14 md:pb-20 lg:px-8">
-				<div className="mx-auto max-w-7xl">
-					<div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-12 lg:gap-12">
-						{/* Left: Introduction & CTAs */}
-						<motion.div
-							initial="hidden"
-							animate="visible"
-							variants={fadeUpVariant}
-							className="order-1 lg:order-1 lg:col-span-7"
-						>
-							{/* Status Chip */}
-							<div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3.5 py-1 text-xs font-semibold text-emerald-300 shadow-sm backdrop-blur-md">
-								<span className="relative flex h-2 w-2">
-									<span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-									<span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
-								</span>
-								<span>Available for Software Engineering Opportunities</span>
-							</div>
+        {/* Interactive Judge Terminal Hero Preview */}
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.4 }}
+          className="w-full max-w-4xl glass-panel rounded-2xl md:rounded-3xl border border-white/10 p-4 sm:p-6 text-left shadow-2xl shadow-indigo-950/60 relative overflow-hidden"
+        >
+          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent" />
+          
+          {/* Terminal Top Bar */}
+          <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-rose-500/80" />
+              <div className="w-3 h-3 rounded-full bg-amber-500/80" />
+              <div className="w-3 h-3 rounded-full bg-emerald-500/80" />
+              <span className="ml-2 text-xs font-mono text-slate-400 flex items-center gap-1.5">
+                <Terminal size={14} className="text-indigo-400" /> dsa-judge-sandbox // two-sum.cpp
+              </span>
+            </div>
 
-							{/* Hero Heading */}
-							<h1 className="mt-4 text-3xl font-extrabold tracking-tight text-white sm:text-4xl lg:text-[44px] xl:text-5xl lg:leading-[1.15]">
-								Hi, I&apos;m <span className="text-white">Parth Hada</span>
-								<span className="block mt-1.5 bg-gradient-to-r from-indigo-400 via-purple-300 to-pink-400 bg-clip-text text-transparent">
-									Full-Stack Developer
-								</span>
-								<span className="block mt-1 text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-300">
-									&amp; AI Systems Builder
-								</span>
-							</h1>
+            <div className="flex items-center gap-2">
+              {(['cpp', 'python', 'java'] as const).map((lang) => (
+                <button
+                  key={lang}
+                  onClick={() => setDemoLang(lang)}
+                  className={`px-2.5 py-1 rounded-md text-xs font-mono font-bold transition-all cursor-pointer ${
+                    demoLang === lang
+                      ? 'bg-indigo-500/30 text-indigo-200 border border-indigo-500/50'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  {lang.toUpperCase()}
+                </button>
+              ))}
 
-							{/* Concise Bio */}
-							<p className="mt-5 max-w-xl text-sm leading-relaxed text-slate-300 sm:text-base sm:leading-7">
-								Computer Science student at <strong className="font-semibold text-white">IIIT Vadodara</strong> with 500+ algorithmic problems solved. I architect production-ready web applications, automated developer tooling, and AI-powered platforms with clean systems and practical utility.
-							</p>
+              <button
+                onClick={handleRunDemo}
+                disabled={demoRunning}
+                className="ml-2 px-3 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center gap-1.5 hover:bg-emerald-500/30 transition-all cursor-pointer"
+              >
+                {demoRunning ? (
+                  <RefreshCw size={12} className="animate-spin text-emerald-400" />
+                ) : (
+                  <Play size={12} className="fill-current text-emerald-400" />
+                )}
+                {demoRunning ? 'Evaluating...' : 'Run Test Suite'}
+              </button>
+            </div>
+          </div>
 
-							{/* Quick Info Badges */}
-							<div className="mt-6 flex flex-wrap items-center gap-2.5 text-xs text-slate-300">
-								<div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-1.5 backdrop-blur-md">
-									<Trophy size={14} className="text-amber-400" />
-									<span>500+ DSA Solved</span>
-								</div>
-								<div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-1.5 backdrop-blur-md">
-									<GraduationCap size={14} className="text-indigo-400" />
-									<span>IIIT Vadodara &apos;28</span>
-								</div>
-								<div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-1.5 backdrop-blur-md">
-									<MapPin size={14} className="text-rose-400" />
-									<span>Gandhinagar, Gujarat</span>
-								</div>
-							</div>
+          {/* Terminal Code Display */}
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-4">
+            <div className="bg-[#070818] p-4 rounded-xl border border-white/5 font-mono text-xs sm:text-sm text-slate-300 overflow-x-auto leading-relaxed max-h-[220px]">
+              <pre>{demoCodes[demoLang]}</pre>
+            </div>
 
-							{/* Main CTA Buttons */}
-							<div className="mt-8 flex flex-wrap items-center gap-3.5">
-								<a
-									href="#projects"
-									className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-indigo-500/25 transition-all duration-300 hover:scale-[1.02] hover:shadow-indigo-500/40 active:scale-[0.98]"
-								>
-									<span>View Featured Project</span>
-									<ArrowRight size={15} />
-								</a>
+            {/* Simulated Execution Result */}
+            <div className="bg-[#070818] p-4 rounded-xl border border-white/5 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Verdict</span>
+                  <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-xs font-extrabold border border-emerald-500/30 flex items-center gap-1">
+                    <CheckCircle2 size={12} /> ACCEPTED
+                  </span>
+                </div>
 
-								<a
-									href={launchUrl}
-									target="_blank"
-									rel="noreferrer"
-									className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/[0.06] px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-md transition-all duration-300 hover:border-white/40 hover:bg-white/10 hover:shadow-[0_0_20px_rgba(255,255,255,0.12)] active:scale-[0.98]"
-								>
-									<span>Launch DSA-Judge</span>
-									<ArrowUpRight size={15} className="text-indigo-400" />
-								</a>
+                <div className="space-y-2 text-xs font-mono">
+                  <div className="flex justify-between py-1 border-b border-white/5 text-slate-400">
+                    <span>Test Cases:</span>
+                    <span className="text-emerald-400 font-bold">15 / 15 Passed</span>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-white/5 text-slate-400">
+                    <span>Execution Time:</span>
+                    <span className="text-slate-200">12 ms</span>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-white/5 text-slate-400">
+                    <span>Time Complexity:</span>
+                    <span className="text-purple-300 font-bold">O(N)</span>
+                  </div>
+                  <div className="flex justify-between py-1 text-slate-400">
+                    <span>Space Complexity:</span>
+                    <span className="text-indigo-300 font-bold">O(N)</span>
+                  </div>
+                </div>
+              </div>
 
-								<a
-									href={resumeUrl}
-									download
-									className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.04] px-4 py-2.5 text-sm font-semibold text-slate-200 transition-all duration-300 hover:bg-white/[0.1] hover:text-white"
-								>
-									<Download size={14} />
-									<span>Resume</span>
-								</a>
-							</div>
+              <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-400">
+                <span className="flex items-center gap-1 text-indigo-300">
+                  <Sparkles size={12} /> AI Verified Solution
+                </span>
+                <span className="text-emerald-400 font-bold">Score: 100/100</span>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </section>
 
-							{/* Social Links Row */}
-							<div className="mt-8 flex items-center gap-3 pt-5 border-t border-white/10">
-								<span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Connect:</span>
-								<a
-									href="https://github.com/Parth-star262"
-									target="_blank"
-									rel="noreferrer"
-									className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs font-semibold text-slate-300 transition hover:border-white/25 hover:bg-white/10 hover:text-white"
-								>
-									<GithubIcon size={14} />
-									<span>GitHub</span>
-								</a>
-								<a
-									href="https://linkedin.com/in/parth-hada"
-									target="_blank"
-									rel="noreferrer"
-									className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs font-semibold text-slate-300 transition hover:border-white/25 hover:bg-white/10 hover:text-white"
-								>
-									<LinkedinIcon size={14} className="text-blue-400" />
-									<span>LinkedIn</span>
-								</a>
-								<a
-									href={`mailto:${myEmail}`}
-									className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs font-semibold text-slate-300 transition hover:border-white/25 hover:bg-white/10 hover:text-white"
-								>
-									<Mail size={14} className="text-rose-400" />
-									<span>Email</span>
-								</a>
-							</div>
-						</motion.div>
+      {/* Metrics Bar Section */}
+      <section className="border-y border-white/10 bg-[#07081a]/60 backdrop-blur-xl py-10 relative z-10">
+        <div className="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+          {metrics.map((m, i) => (
+            <div key={i} className="flex flex-col items-center">
+              <span className="text-3xl sm:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 via-purple-300 to-pink-300 font-['Outfit']">
+                {m.val}
+              </span>
+              <span className="text-sm font-semibold text-slate-200 mt-1">{m.label}</span>
+              <span className="text-xs text-slate-400">{m.sub}</span>
+            </div>
+          ))}
+        </div>
+      </section>
 
-						{/* Right: Portrait & Interactive Visual Card */}
-						<motion.div
-							initial={{ opacity: 0, scale: 0.94, y: 20 }}
-							animate={{ opacity: 1, scale: 1, y: 0 }}
-							transition={{ duration: 0.6, ease: 'easeOut' }}
-							className="order-2 flex justify-center lg:order-2 lg:col-span-5"
-						>
-							<div className="relative w-full max-w-[310px] sm:max-w-[340px]">
-								{/* Ambient Glow behind image */}
-								<div className="absolute -inset-3 rounded-[36px] bg-gradient-to-tr from-indigo-500/30 via-purple-500/20 to-pink-500/30 blur-2xl -z-10" />
+      {/* Feature Matrix Showcase Section */}
+      <section className="max-w-7xl mx-auto px-6 py-24 relative z-10">
+        <div className="text-center mb-16">
+          <span className="px-3.5 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 text-xs font-bold uppercase tracking-widest">
+            Complete Toolkit
+          </span>
+          <h2 className="text-3xl sm:text-5xl font-extrabold text-white mt-4 tracking-tight">
+            Engineered for <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400">Technical Excellence</span>
+          </h2>
+          <p className="text-slate-400 text-base sm:text-lg max-w-2xl mx-auto mt-3">
+            Every feature is designed to sharpen your problem-solving workflow and prepare you for real tech interviews.
+          </p>
+        </div>
 
-								{/* Main Portrait Container */}
-								<div className="relative overflow-hidden rounded-[30px] border border-white/15 bg-gradient-to-b from-white/10 via-white/[0.04] to-transparent p-2.5 backdrop-blur-xl shadow-2xl shadow-indigo-950/60">
-									<div className="relative aspect-[4/5] w-full overflow-hidden rounded-[24px]">
-										<Image
-											src="/parth-photo.jpg"
-											alt="Parth Hada"
-											fill
-											priority
-											className="object-cover object-top transition-transform duration-500 hover:scale-105"
-											sizes="(max-width: 768px) 100vw, 380px"
-										/>
-										<div className="absolute inset-0 bg-gradient-to-t from-[#030014]/80 via-transparent to-transparent" />
+        {/* Feature Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {features.map((feat) => {
+            const Icon = feat.icon;
+            return (
+              <motion.div
+                key={feat.id}
+                whileHover={{ y: -4 }}
+                transition={{ duration: 0.3 }}
+                className="glass-panel p-8 rounded-3xl border border-white/10 hover:border-indigo-500/30 relative overflow-hidden flex flex-col justify-between group"
+              >
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500 pointer-events-none" />
 
-										{/* Floating Overlays */}
-										<div className="absolute bottom-3 left-3 right-3 flex items-center justify-between rounded-xl border border-white/15 bg-black/60 px-3.5 py-2.5 backdrop-blur-md">
-											<div>
-												<p className="text-xs font-bold text-white">Parth Hada</p>
-												<p className="text-[11px] text-slate-300">Creator of DSA-Judge</p>
-											</div>
-											<span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-bold text-emerald-300 border border-emerald-500/30">
-												<span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-												Online
-											</span>
-										</div>
-									</div>
-								</div>
-							</div>
-						</motion.div>
-					</div>
-				</div>
-			</section>
+                <div>
+                  <div className="flex items-center justify-between mb-6">
+                    <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${feat.color} p-[1px] shadow-lg`}>
+                      <div className="w-full h-full bg-[#0a0b1e] rounded-[15px] flex items-center justify-center">
+                        <Icon size={26} className="text-white" />
+                      </div>
+                    </div>
+                    <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-slate-300 text-xs font-semibold">
+                      {feat.badge}
+                    </span>
+                  </div>
 
-			{/* ================= FEATURED PROJECT: DSA-JUDGE ================= */}
-			<section id="projects" className="relative px-4 py-20 sm:px-6 lg:px-8 border-t border-white/10">
-				<div className="mx-auto max-w-7xl">
-					{/* Section Header */}
-					<motion.div
-						initial="hidden"
-						whileInView="visible"
-						viewport={{ once: true, amount: 0.3 }}
-						variants={fadeUpVariant}
-						className="max-w-3xl"
-					>
-						<div className="inline-flex items-center gap-2 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-indigo-300">
-							<Sparkles size={13} />
-							<span>Flagship Project</span>
-						</div>
-						<h2 className="mt-4 text-2xl font-bold tracking-tight text-white sm:text-3xl lg:text-4xl">
-							DSA-Judge Platform
-						</h2>
-						<p className="mt-3 text-sm sm:text-base leading-relaxed text-slate-300">
-							A full-stack competitive programming and AI-assisted technical interview simulator built from scratch for engineering candidates and learners.
-						</p>
-					</motion.div>
+                  <h3 className="text-2xl font-bold text-white mb-2">{feat.title}</h3>
+                  <div className="text-xs font-semibold text-indigo-400 uppercase tracking-wider mb-3">{feat.subtitle}</div>
+                  <p className="text-slate-400 leading-relaxed text-sm sm:text-base">{feat.desc}</p>
+                </div>
 
-					{/* Project Card */}
-					<motion.div
-						initial="hidden"
-						whileInView="visible"
-						viewport={{ once: true, amount: 0.2 }}
-						variants={fadeUpVariant}
-						className="mt-12 overflow-hidden rounded-3xl border border-white/15 bg-gradient-to-b from-white/[0.06] via-white/[0.02] to-transparent p-6 sm:p-10 backdrop-blur-xl shadow-2xl"
-					>
-						<div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:items-center">
-							{/* Left: Summary & CTAs */}
-							<div className="lg:col-span-6 space-y-6">
-								<div className="flex flex-wrap items-center gap-2">
-									<span className="rounded-md border border-indigo-500/30 bg-indigo-500/15 px-2.5 py-1 text-xs font-semibold text-indigo-300">
-										Next.js 16 (App Router)
-									</span>
-									<span className="rounded-md border border-cyan-500/30 bg-cyan-500/15 px-2.5 py-1 text-xs font-semibold text-cyan-300">
-										Node.js / Express
-									</span>
-									<span className="rounded-md border border-purple-500/30 bg-purple-500/15 px-2.5 py-1 text-xs font-semibold text-purple-300">
-										PostgreSQL &amp; Prisma
-									</span>
-									<span className="rounded-md border border-pink-500/30 bg-pink-500/15 px-2.5 py-1 text-xs font-semibold text-pink-300">
-										Google Gemini AI
-									</span>
-								</div>
+                <div className="mt-8 pt-4 border-t border-white/5 flex items-center justify-between">
+                  <Link href="/problems" className="text-sm font-bold text-indigo-400 hover:text-indigo-300 flex items-center gap-1.5 group-hover:translate-x-1 transition-transform">
+                    Explore Feature <ArrowRight size={14} />
+                  </Link>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      </section>
 
-								<p className="text-base sm:text-lg leading-relaxed text-slate-300">
-									DSA-Judge bridges the gap between solitary problem solving and real interview pressure. It provides a browser-based IDE powered by Monaco, strict judge sandboxing, interactive AI coaching, and deep telemetry on code efficiency.
-								</p>
+      {/* Recruiter & System Architecture Section */}
+      <section className="max-w-7xl mx-auto px-6 py-16 relative z-10">
+        <div className="glass-panel p-8 sm:p-12 rounded-3xl border border-white/10 bg-gradient-to-b from-[#0a0c24] to-[#040514]">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-10 pb-8 border-b border-white/10">
+            <div>
+              <span className="px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs font-bold uppercase tracking-widest">
+                System Design & Stack
+              </span>
+              <h3 className="text-3xl font-extrabold text-white mt-3">Architected Like Commercial SaaS</h3>
+              <p className="text-slate-400 text-sm sm:text-base mt-1 max-w-xl">
+                Built with full-stack TypeScript, asynchronous judge streaming, isolated code execution containers, and Google Gemini AI models.
+              </p>
+            </div>
 
-								{/* Highlights List */}
-								<div className="space-y-3 pt-2">
-									<div className="flex items-start gap-3">
-										<CheckCircle2 size={18} className="mt-0.5 text-emerald-400 shrink-0" />
-										<span className="text-sm text-slate-300">Multi-language execution (C++, Java, Python, JS) with sub-second verdict feedback.</span>
-									</div>
-									<div className="flex items-start gap-3">
-										<CheckCircle2 size={18} className="mt-0.5 text-emerald-400 shrink-0" />
-										<span className="text-sm text-slate-300">Interactive AI Mock Interviews providing real-time hints and complexity evaluation.</span>
-									</div>
-									<div className="flex items-start gap-3">
-										<CheckCircle2 size={18} className="mt-0.5 text-emerald-400 shrink-0" />
-										<span className="text-sm text-slate-300">Monaco code editor with syntax highlighting, custom test inputs, and full keyboard ergonomics.</span>
-									</div>
-								</div>
+            <div className="flex flex-wrap gap-2">
+              {['Next.js 16', 'TypeScript', 'Tailwind v4', 'Prisma ORM', 'Express.js', 'SSE Streaming', 'Gemini AI'].map((tech) => (
+                <span key={tech} className="px-3 py-1.5 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-200 text-xs font-mono font-semibold">
+                  {tech}
+                </span>
+              ))}
+            </div>
+          </div>
 
-								<div className="flex flex-wrap items-center gap-4 pt-4">
-									<a
-										href={launchUrl}
-										target="_blank"
-										rel="noreferrer"
-										className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-indigo-500/30 transition hover:scale-[1.02] hover:shadow-indigo-500/50"
-									>
-										<span>Launch Live App</span>
-										<ArrowUpRight size={16} />
-									</a>
-									<a
-										href={repoUrl}
-										target="_blank"
-										rel="noreferrer"
-										className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/[0.04] px-5 py-3 text-sm font-semibold text-slate-200 transition hover:bg-white/10 hover:text-white"
-									>
-										<GithubIcon size={16} />
-										<span>Source Code</span>
-									</a>
-								</div>
-							</div>
+          {/* Pipeline Visual Flow */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
+            {[
+              { step: '01', title: 'Code Editor', desc: 'Monaco Editor with multi-language starter templates & linting' },
+              { step: '02', title: 'SSE Gateway', desc: 'Asynchronous streaming protocol delivering instant verdicts' },
+              { step: '03', title: 'Judge Engine', desc: 'Isolated runtime evaluating hidden test cases & time complexity' },
+              { step: '04', title: 'AI Assistant', desc: 'Gemini 1.5 Flash generating code reviews, hints & interview feedback' },
+            ].map((p, i) => (
+              <div key={i} className="bg-white/[0.02] p-5 rounded-2xl border border-white/5 flex flex-col items-center">
+                <span className="text-xs font-mono font-bold text-indigo-400 mb-2">{p.step}.</span>
+                <span className="text-base font-bold text-white mb-1">{p.title}</span>
+                <span className="text-xs text-slate-400 leading-relaxed">{p.desc}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-							{/* Right: Feature Grid Cards */}
-							<div className="lg:col-span-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
-								{dsaJudgeFeatures.map((feat) => {
-									const Icon = feat.icon;
-									return (
-										<div
-											key={feat.title}
-											className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-md transition-all duration-300 hover:border-indigo-500/30 hover:bg-white/[0.06] hover:translate-y-[-2px]"
-										>
-											<div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-indigo-500/20 to-purple-500/20 text-indigo-300 border border-indigo-500/30">
-												<Icon size={19} />
-											</div>
-											<h3 className="mt-3.5 text-base font-bold text-white">{feat.title}</h3>
-											<p className="mt-2 text-xs leading-relaxed text-slate-400">{feat.desc}</p>
-										</div>
-									);
-								})}
-							</div>
-						</div>
-					</motion.div>
-				</div>
-			</section>
+      {/* Final Call to Action Section */}
+      <section className="max-w-7xl mx-auto px-6 py-20 text-center relative z-10">
+        <div className="glass-panel p-10 sm:p-16 rounded-3xl border border-indigo-500/30 bg-gradient-to-r from-indigo-900/30 via-purple-900/20 to-pink-900/30 relative overflow-hidden">
+          <div className="absolute -top-24 -left-24 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl" />
+          <div className="absolute -bottom-24 -right-24 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl" />
 
-			{/* ================= TECHNICAL SKILLS ================= */}
-			<section id="skills" className="relative px-4 py-20 sm:px-6 lg:px-8 border-t border-white/10">
-				<div className="mx-auto max-w-7xl">
-					<motion.div
-						initial="hidden"
-						whileInView="visible"
-						viewport={{ once: true, amount: 0.3 }}
-						variants={fadeUpVariant}
-						className="text-center max-w-2xl mx-auto"
-					>
-						<div className="inline-flex items-center gap-2 rounded-full border border-purple-500/30 bg-purple-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-purple-300">
-							<Code2 size={13} />
-							<span>Technical Toolkit</span>
-						</div>
-						<h2 className="mt-4 text-2xl font-bold tracking-tight text-white sm:text-3xl lg:text-4xl">
-							Skills &amp; Technologies
-						</h2>
-						<p className="mt-3 text-sm sm:text-base text-slate-300">
-							Languages, frameworks, and engineering tools I leverage to build resilient digital products.
-						</p>
-					</motion.div>
+          <h2 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight mb-4">
+            Ready to Level Up Your Coding Credentials?
+          </h2>
+          <p className="text-slate-300 text-base sm:text-lg max-w-2xl mx-auto mb-8">
+            Join hundreds of developers solving curated DSA problems, tracking topic mastery, and mastering AI-assisted interviews today.
+          </p>
 
-					{/* 4 Category Matrix */}
-					<motion.div
-						initial="hidden"
-						whileInView="visible"
-						viewport={{ once: true, amount: 0.2 }}
-						variants={fadeUpVariant}
-						className="mt-14 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
-					>
-						{skillCategories.map((cat) => {
-							const Icon = cat.icon;
-							return (
-								<div
-									key={cat.title}
-									className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 backdrop-blur-md transition-all duration-300 hover:border-white/20 hover:bg-white/[0.04]"
-								>
-									<div className="flex items-center gap-3">
-										<div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/[0.06] border border-white/10 text-white">
-											<Icon size={18} />
-										</div>
-										<h3 className="text-base font-bold text-white">{cat.title}</h3>
-									</div>
-									<div className="mt-5 flex flex-wrap gap-2">
-										{cat.skills.map((skill) => (
-											<span
-												key={skill}
-												className={`rounded-lg border px-2.5 py-1 text-xs font-medium ${cat.badgeColor}`}
-											>
-												{skill}
-											</span>
-										))}
-									</div>
-								</div>
-							);
-						})}
-					</motion.div>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link href="/problems">
+              <button className="btn-primary py-3.5 px-8 text-base font-bold shadow-xl shadow-indigo-500/40 cursor-pointer">
+                Explore Problems Sheet
+              </button>
+            </Link>
+            <Link href="/register">
+              <button className="btn-ghost py-3.5 px-8 text-base font-semibold border-white/20 hover:bg-white/10 cursor-pointer">
+                Create Free Account
+              </button>
+            </Link>
+          </div>
+        </div>
+      </section>
 
-					{/* Continuous Marquee Ticker */}
-					<div className="mt-16 overflow-hidden py-4 border-y border-white/10 bg-white/[0.01]">
-						<div className="portfolio-tech-track flex items-center gap-12">
-							{[...techStack, ...techStack, ...techStack].map((tech, idx) => (
-								<div
-									key={`${tech.name}-${idx}`}
-									className="flex items-center gap-3 px-4 py-2 rounded-xl border border-white/10 bg-white/[0.03] shrink-0"
-								>
-									<img src={tech.icon} alt={tech.name} className="h-6 w-6 object-contain" />
-									<span className="text-xs font-bold text-slate-300">{tech.name}</span>
-								</div>
-							))}
-						</div>
-					</div>
-				</div>
-			</section>
-
-			{/* ================= ABOUT, EDUCATION & ACHIEVEMENTS ================= */}
-			<section id="about" className="relative px-4 py-20 sm:px-6 lg:px-8 border-t border-white/10">
-				<div className="mx-auto max-w-7xl">
-					<motion.div
-						initial="hidden"
-						whileInView="visible"
-						viewport={{ once: true, amount: 0.3 }}
-						variants={fadeUpVariant}
-						className="max-w-3xl"
-					>
-						<div className="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-blue-300">
-							<GraduationCap size={13} />
-							<span>Background</span>
-						</div>
-						<h2 className="mt-4 text-2xl font-bold tracking-tight text-white sm:text-3xl lg:text-4xl">
-							Education &amp; Milestones
-						</h2>
-						<p className="mt-3 text-sm sm:text-base text-slate-300">
-							My academic path, competitive programming journey, and leadership on campus.
-						</p>
-					</motion.div>
-
-					<motion.div
-						initial="hidden"
-						whileInView="visible"
-						viewport={{ once: true, amount: 0.2 }}
-						variants={fadeUpVariant}
-						className="mt-12 grid grid-cols-1 lg:grid-cols-2 gap-8"
-					>
-						{/* Card 1: Education & Campus */}
-						<div className="rounded-3xl border border-white/10 bg-white/[0.02] p-8 backdrop-blur-md">
-							<div className="flex items-center gap-3 text-indigo-400">
-								<GraduationCap size={22} />
-								<h3 className="text-xl font-bold text-white">Academic Journey</h3>
-							</div>
-
-							<div className="mt-6 border-l-2 border-indigo-500/40 pl-5">
-								<h4 className="text-lg font-bold text-white">Indian Institute of Information Technology, Vadodara</h4>
-								<p className="text-sm font-semibold text-indigo-300 mt-1">B.Tech in Computer Science and Engineering</p>
-								<p className="text-xs text-slate-400 mt-1">2024 – 2028 • Gandhinagar Campus, Gujarat</p>
-								<p className="mt-3 text-sm leading-relaxed text-slate-300">
-									Rigorous coursework covering Data Structures &amp; Algorithms, Object-Oriented Design, Operating Systems, Database Management Systems, and Discrete Mathematics.
-								</p>
-							</div>
-
-							<div className="mt-8 pt-6 border-t border-white/10">
-								<h4 className="text-sm font-bold uppercase tracking-wider text-slate-300">Campus Involvement</h4>
-								<ul className="mt-4 space-y-3">
-									<li className="flex items-center gap-3 text-sm text-slate-300">
-										<ArrowRight size={15} className="text-indigo-400 shrink-0" />
-										<span><strong>Finance Club, IIIT Vadodara</strong> — Active Member</span>
-									</li>
-									<li className="flex items-center gap-3 text-sm text-slate-300">
-										<ArrowRight size={15} className="text-indigo-400 shrink-0" />
-										<span><strong>E-Cell, IIIT Vadodara</strong> — Active Member</span>
-									</li>
-								</ul>
-							</div>
-						</div>
-
-						{/* Card 2: Achievements & Projects */}
-						<div className="rounded-3xl border border-white/10 bg-white/[0.02] p-8 backdrop-blur-md">
-							<div className="flex items-center gap-3 text-amber-400">
-								<Trophy size={22} />
-								<h3 className="text-xl font-bold text-white">Achievements &amp; Hackathons</h3>
-							</div>
-
-							<ul className="mt-6 space-y-5">
-								<li className="flex items-start gap-4">
-									<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300">
-										<Code2 size={18} />
-									</div>
-									<div>
-										<h4 className="text-base font-bold text-white">500+ Algorithmic Problems Solved</h4>
-										<p className="mt-1 text-xs leading-relaxed text-slate-400">
-											Consistently solved challenging problems spanning dynamic programming, graphs, trees, and system logic across major competitive platforms.
-										</p>
-									</div>
-								</li>
-
-								<li className="flex items-start gap-4">
-									<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-300">
-										<Sparkles size={18} />
-									</div>
-									<div>
-										<h4 className="text-base font-bold text-white">HackOut&apos;25 Participant (DA-IICT)</h4>
-										<p className="mt-1 text-xs leading-relaxed text-slate-400">
-											Collaborated under tight deadlines to design and engineer full-stack solutions during the 2025 hackathon on the DA-IICT campus.
-										</p>
-									</div>
-								</li>
-
-								<li className="flex items-start gap-4">
-									<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300">
-										<Briefcase size={18} />
-									</div>
-									<div>
-										<h4 className="text-base font-bold text-white">Coastal Threat Alert Prototype</h4>
-										<p className="mt-1 text-xs leading-relaxed text-slate-400">
-											Initiated development of a real-time hazard detection and alerting tool designed to keep coastal communities informed and safe.
-										</p>
-									</div>
-								</li>
-							</ul>
-
-							<div className="mt-8 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-xs text-slate-300">
-								<span className="font-bold text-white">Core Engineering Ethos:</span> Write clean, maintainable code with strict attention to performance bottlenecks and user clarity.
-							</div>
-						</div>
-					</motion.div>
-				</div>
-			</section>
-
-			{/* ================= CONTACT SECTION ================= */}
-			<section id="contact" className="relative px-4 py-20 sm:px-6 lg:px-8 border-t border-white/10">
-				<div className="mx-auto max-w-7xl">
-					<motion.div
-						initial="hidden"
-						whileInView="visible"
-						viewport={{ once: true, amount: 0.3 }}
-						variants={fadeUpVariant}
-						className="grid grid-cols-1 gap-12 lg:grid-cols-12"
-					>
-						{/* Left: Contact Info */}
-						<div className="lg:col-span-5 space-y-6">
-							<div className="inline-flex items-center gap-2 rounded-full border border-pink-500/30 bg-pink-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-pink-300">
-								<Mail size={13} />
-								<span>Get in Touch</span>
-							</div>
-
-							<h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl lg:text-4xl">
-								Let&apos;s build something exceptional.
-							</h2>
-
-							<p className="text-sm sm:text-base text-slate-300 leading-relaxed">
-								I am actively seeking software engineering internship opportunities, technical collaborations, and ambitious projects. Reach out via email or send a note below.
-							</p>
-
-							{/* Contact Cards */}
-							<div className="space-y-3 pt-2">
-								<div
-									onClick={copyEmail}
-									className="group flex cursor-pointer items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] p-4 transition hover:border-indigo-500/40 hover:bg-white/[0.06]"
-								>
-									<div className="flex items-center gap-3">
-										<div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-400">
-											<Mail size={18} />
-										</div>
-										<div>
-											<p className="text-xs text-slate-400">Primary Email</p>
-											<p className="text-sm font-semibold text-white">{myEmail}</p>
-										</div>
-									</div>
-									<span className="text-xs font-medium text-slate-400 group-hover:text-indigo-300">
-										{copiedEmail ? 'Copied!' : 'Click to copy'}
-									</span>
-								</div>
-
-								<a
-									href="https://linkedin.com/in/parth-hada"
-									target="_blank"
-									rel="noreferrer"
-									className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] p-4 transition hover:border-blue-500/40 hover:bg-white/[0.06]"
-								>
-									<div className="flex items-center gap-3">
-										<div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/10 text-blue-400">
-											<LinkedinIcon size={18} />
-										</div>
-										<div>
-											<p className="text-xs text-slate-400">Professional Profile</p>
-											<p className="text-sm font-semibold text-white">linkedin.com/in/parth-hada</p>
-										</div>
-									</div>
-									<ExternalLink size={16} className="text-slate-400" />
-								</a>
-
-								<a
-									href="https://github.com/Parth-star262"
-									target="_blank"
-									rel="noreferrer"
-									className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] p-4 transition hover:border-white/30 hover:bg-white/[0.06]"
-								>
-									<div className="flex items-center gap-3">
-										<div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white">
-											<GithubIcon size={18} />
-										</div>
-										<div>
-											<p className="text-xs text-slate-400">Code Repositories</p>
-											<p className="text-sm font-semibold text-white">github.com/Parth-star262</p>
-										</div>
-									</div>
-									<ExternalLink size={16} className="text-slate-400" />
-								</a>
-							</div>
-						</div>
-
-						{/* Right: Functional Contact Form */}
-						<div className="lg:col-span-7">
-							<form
-								onSubmit={submitContact}
-								className="rounded-3xl border border-white/15 bg-white/[0.03] p-6 sm:p-8 backdrop-blur-xl shadow-xl space-y-5"
-							>
-								<h3 className="text-xl font-bold text-white">Send a Direct Message</h3>
-								<p className="text-xs text-slate-400">Fill in your information and this will open your email client pre-filled.</p>
-
-								<div>
-									<label htmlFor="name" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-										Your Name
-									</label>
-									<input
-										id="name"
-										type="text"
-										required
-										value={formName}
-										onChange={(e) => setFormName(e.target.value)}
-										placeholder="e.g. John Doe"
-										className="w-full rounded-xl border border-white/15 bg-black/40 px-4 py-3 text-sm text-white placeholder-slate-500 outline-none transition focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400"
-									/>
-								</div>
-
-								<div>
-									<label htmlFor="email" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-										Your Email
-									</label>
-									<input
-										id="email"
-										type="email"
-										required
-										value={formEmail}
-										onChange={(e) => setFormEmail(e.target.value)}
-										placeholder="john@example.com"
-										className="w-full rounded-xl border border-white/15 bg-black/40 px-4 py-3 text-sm text-white placeholder-slate-500 outline-none transition focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400"
-									/>
-								</div>
-
-								<div>
-									<label htmlFor="message" className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
-										Message
-									</label>
-									<textarea
-										id="message"
-										required
-										rows={5}
-										value={formMessage}
-										onChange={(e) => setFormMessage(e.target.value)}
-										placeholder="Tell me about your project, internship opportunity, or idea..."
-										className="w-full rounded-xl border border-white/15 bg-black/40 px-4 py-3 text-sm text-white placeholder-slate-500 outline-none transition focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 resize-none"
-									/>
-								</div>
-
-								<button
-									type="submit"
-									className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 py-3.5 text-sm font-bold text-white shadow-lg shadow-indigo-500/25 transition hover:scale-[1.01] hover:shadow-indigo-500/40 active:scale-[0.99]"
-								>
-									<Send size={15} />
-									<span>Send Message</span>
-								</button>
-							</form>
-						</div>
-					</motion.div>
-				</div>
-			</section>
-
-			{/* ================= FOOTER ================= */}
-			<footer className="border-t border-white/10 px-4 py-8 sm:px-6 lg:px-8 bg-black/30">
-				<div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 text-xs text-slate-400 sm:flex-row">
-					<p>© {new Date().getFullYear()} Parth Hada • IIIT Vadodara CSE. Built with Next.js &amp; Tailwind CSS.</p>
-					<div className="flex items-center gap-5">
-						<a href={launchUrl} target="_blank" rel="noreferrer" className="transition hover:text-white">
-							DSA-Judge Live
-						</a>
-						<a href={repoUrl} target="_blank" rel="noreferrer" className="transition hover:text-white">
-							GitHub
-						</a>
-						<a href="#home" className="transition hover:text-white">
-							Back to Top ↑
-						</a>
-					</div>
-				</div>
-			</footer>
-		</div>
-	);
+      {/* Footer */}
+      <footer className="border-t border-white/10 bg-[#02030d] py-10 px-6 relative z-10 text-center text-xs text-slate-500">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <Code2 size={18} className="text-indigo-400" />
+            <span className="font-bold text-slate-300 text-sm">DSA-Judge</span>
+            <span>— Advanced Code Judge & AI Interview Coach</span>
+          </div>
+          <div>
+            <span>Built with Next.js 16, TypeScript & Google Gemini AI</span>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
 }

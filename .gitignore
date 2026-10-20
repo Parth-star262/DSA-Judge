@@ -33,3 +33,7 @@ frontend/node_modules/
 .next/
 
 frontend/.next/
+
+# Standalone portfolio repository
+portfolio/
+portfolio-backup/
