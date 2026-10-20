@@ -22,7 +22,9 @@ import { useAuth } from '@/contexts/AuthContext';
 const portfolioLinks = [
   { name: 'Home', href: '#home' },
   { name: 'Projects', href: '#projects' },
+  { name: 'Skills', href: '#skills' },
   { name: 'About', href: '#about' },
+  { name: 'Contact', href: '#contact' },
 ];
 
 const appLinks = [
@@ -58,7 +60,9 @@ export default function Navbar() {
 
   const brand = isPortfolio ? (
     <Link href="/" className="flex items-center gap-2 group" onClick={closeMobile}>
-      <div className="text-2xl font-black tracking-tight text-white">Parth.</div>
+      <div className="text-2xl font-black tracking-tight text-white font-['Outfit']">
+        Parth<span className="text-indigo-400">.</span>
+      </div>
     </Link>
   ) : (
     <Link href="/" className="flex items-center gap-3 group" onClick={closeMobile}>
@@ -76,16 +80,20 @@ export default function Navbar() {
   return (
     <header className={`sticky top-0 z-50 w-full border-b backdrop-blur-2xl ${
       isPortfolio
-        ? 'border-white/10 bg-[#050608]/86 text-white'
+        ? 'border-white/10 bg-[#030014]/85 text-white'
         : 'border-white/10 bg-[#030014]/80 text-white supports-[backdrop-filter]:bg-[#030014]/60'
     }`}>
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {brand}
 
         {isPortfolio ? (
-          <nav className="hidden items-center gap-1 md:flex">
+          <nav className="hidden items-center gap-7 md:flex">
             {portfolioLinks.map((link) => (
-              <a key={link.href} href={link.href} className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-300 transition hover:bg-white/10 hover:text-white">
+              <a
+                key={link.href}
+                href={link.href}
+                className="text-sm font-medium text-slate-300 transition-colors duration-200 hover:text-white"
+              >
                 {link.name}
               </a>
             ))}
@@ -132,14 +140,24 @@ export default function Navbar() {
           </nav>
         )}
 
-        <div className="hidden items-center gap-2 md:flex">
+        <div className="hidden items-center gap-2.5 md:flex">
           {isPortfolio ? (
             <>
-              <button type="button" className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-slate-200 transition hover:bg-white/10" aria-label="Theme switch">
-                <Sun size={16} />
-              </button>
-              <a href="/resume" download className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white px-5 py-2 text-sm font-semibold text-black transition hover:shadow-[0_0_24px_rgba(255,255,255,0.32)]">
-                Resume ↓
+              <Link
+                href="/problems"
+                className="inline-flex items-center gap-1.5 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-3.5 py-1.5 text-xs font-semibold text-indigo-300 transition hover:bg-indigo-500/20 hover:border-indigo-500/50"
+              >
+                <Code2 size={13} />
+                <span>DSA-Judge</span>
+                <span className="text-[10px] text-indigo-400">↗</span>
+              </Link>
+              <a
+                href="/resume"
+                download
+                className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-1.5 text-xs font-bold text-slate-900 shadow transition hover:bg-slate-200 active:scale-[0.98]"
+              >
+                <span>Resume</span>
+                <span>↓</span>
               </a>
             </>
           ) : user ? (
