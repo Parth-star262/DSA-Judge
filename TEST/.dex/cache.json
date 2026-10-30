@@ -1,0 +1,1276 @@
+{
+  "schema_version": 5,
+  "datasets": [
+    {
+      "identifier": "dex_demo.main.customers",
+      "object_type": "table",
+      "row_count": 1200,
+      "byte_size": null,
+      "columns": [
+        {
+          "name": "customer_id",
+          "data_type": "INTEGER",
+          "nullable": true,
+          "null_fraction": 0.0,
+          "distinct_count": 1200,
+          "distinct_count_exact": true,
+          "is_unique": true,
+          "min_value": 1,
+          "max_value": 1200,
+          "pii": null,
+          "pii_overridden": null,
+          "value_domain": null,
+          "temporal_granularity": null,
+          "temporal_span": null,
+          "temporal_distinct_periods": null,
+          "temporal_missing_periods": null,
+          "temporal_largest_gap": null
+        },
+        {
+          "name": "email",
+          "data_type": "VARCHAR",
+          "nullable": true,
+          "null_fraction": 0.0,
+          "distinct_count": 1200,
+          "distinct_count_exact": true,
+          "is_unique": true,
+          "min_value": null,
+          "max_value": null,
+          "pii": {
+            "category": "email",
+            "confidence": 0.95
+          },
+          "pii_overridden": null,
+          "value_domain": null,
+          "temporal_granularity": null,
+          "temporal_span": null,
+          "temporal_distinct_periods": null,
+          "temporal_missing_periods": null,
+          "temporal_largest_gap": null
+        },
+        {
+          "name": "full_name",
+          "data_type": "VARCHAR",
+          "nullable": true,
+          "null_fraction": 0.0,
+          "distinct_count": 387,
+          "distinct_count_exact": false,
+          "is_unique": false,
+          "min_value": null,
+          "max_value": null,
+          "pii": {
+            "category": "name",
+            "confidence": 0.75
+          },
+          "pii_overridden": null,
+          "value_domain": null,
+          "temporal_granularity": null,
+          "temporal_span": null,
+          "temporal_distinct_periods": null,
+          "temporal_missing_periods": null,
+          "temporal_largest_gap": null
+        },
+        {
+          "name": "country_code",
+          "data_type": "VARCHAR",
+          "nullable": true,
+          "null_fraction": 0.0,
+          "distinct_count": 8,
+          "distinct_count_exact": false,
+          "is_unique": false,
+          "min_value": null,
+          "max_value": null,
+          "pii": null,
+          "pii_overridden": null,
+          "value_domain": {
+            "values": [
+              {
+                "value": "IT",
+                "count": 173
+              },
+              {
+                "value": "BE",
+                "count": 163
+              },
+              {
+                "value": "DE",
+                "count": 152
+              },
+              {
+                "value": "ES",
+                "count": 149
+              },
+              {
+                "value": "SE",
+                "count": 145
+              },
+              {
+                "value": "NL",
+                "count": 144
+              },
+              {
+                "value": "PL",
+                "count": 140
+              },
+              {
+                "value": "FR",
+                "count": 134
+              }
+            ],
+            "elided": 0
+          },
+          "temporal_granularity": null,
+          "temporal_span": null,
+          "temporal_distinct_periods": null,
+          "temporal_missing_periods": null,
+          "temporal_largest_gap": null
+        },
+        {
+          "name": "signup_date",
+          "data_type": "DATE",
+          "nullable": true,
+          "null_fraction": 0.0,
+          "distinct_count": 727,
+          "distinct_count_exact": false,
+          "is_unique": false,
+          "min_value": "2023-03-29",
+          "max_value": "2026-03-01",
+          "pii": null,
+          "pii_overridden": null,
+          "value_domain": null,
+          "temporal_granularity": "day",
+          "temporal_span": 1069,
+          "temporal_distinct_periods": 742,
+          "temporal_missing_periods": 327,
+          "temporal_largest_gap": 4
+        },
+        {
+          "name": "lifetime_value",
+          "data_type": "DECIMAL(10,2)",
+          "nullable": true,
+          "null_fraction": 0.0,
+          "distinct_count": 1199,
+          "distinct_count_exact": true,
+          "is_unique": false,
+          "min_value": 16.82,
+          "max_value": 4784.83,
+          "pii": null,
+          "pii_overridden": null,
+          "value_domain": null,
+          "temporal_granularity": null,
+          "temporal_span": null,
+          "temporal_distinct_periods": null,
+          "temporal_missing_periods": null,
+          "temporal_largest_gap": null
+        }
+      ],
+      "candidate_keys": [
+        [
+          "customer_id"
+        ],
+        [
+          "email"
+        ]
+      ],
+      "grain": [
+        "customer_id"
+      ],
+      "composite_keys": [],
+      "key_evidence": [
+        {
+          "columns": [
+            "customer_id"
+          ],
+          "status": "reported",
+          "reason": "customer_id is unique and non-null on all 1200 rows, proven by an exact distinct count"
+        },
+        {
+          "columns": [
+            "email"
+          ],
+          "status": "reported",
+          "reason": "email is unique and non-null on all 1200 rows, proven by an exact distinct count"
+        }
+      ],
+      "rank_score": 0.71,
+      "data_quality": [],
+      "findings": [
+        {
+          "column": "customer_id",
+          "code": "nullable_grain_column",
+          "severity": "medium",
+          "detail": "customer_id participates in the detected grain but the warehouse still allows it to be NULL"
+        }
+      ],
+      "profiled_at": "2026-10-28T04:37:01.462465+00:00",
+      "semantic_models": [],
+      "values_withheld": false
+    },
+    {
+      "identifier": "dex_demo.main.order_items",
+      "object_type": "table",
+      "row_count": 14000,
+      "byte_size": null,
+      "columns": [
+        {
+          "name": "order_item_id",
+          "data_type": "BIGINT",
+          "nullable": true,
+          "null_fraction": 0.0,
+          "distinct_count": 13000,
+          "distinct_count_exact": true,
+          "is_unique": false,
+          "min_value": 1,
+          "max_value": 13000,
+          "pii": null,
+          "pii_overridden": null,
+          "value_domain": null,
+          "temporal_granularity": null,
+          "temporal_span": null,
+          "temporal_distinct_periods": null,
+          "temporal_missing_periods": null,
+          "temporal_largest_gap": null
+        },
+        {
+          "name": "order_id",
+          "data_type": "BIGINT",
+          "nullable": true,
+          "null_fraction": 0.0,
+          "distinct_count": 4528,
+          "distinct_count_exact": false,
+          "is_unique": false,
+          "min_value": 1,
+          "max_value": 5000,
+          "pii": null,
+          "pii_overridden": null,
+          "value_domain": null,
+          "temporal_granularity": null,
+          "temporal_span": null,
+          "temporal_distinct_periods": null,
+          "temporal_missing_periods": null,
+          "temporal_largest_gap": null
+        },
+        {
+          "name": "product_id",
+          "data_type": "INTEGER",
+          "nullable": true,
+          "null_fraction": 0.0,
+          "distinct_count": 297,
+          "distinct_count_exact": false,
+          "is_unique": false,
+          "min_value": 1,
+          "max_value": 300,
+          "pii": null,
+          "pii_overridden": null,
+          "value_domain": null,
+          "temporal_granularity": null,
+          "temporal_span": null,
+          "temporal_distinct_periods": null,
+          "temporal_missing_periods": null,
+          "temporal_largest_gap": null
+        },
+        {
+          "name": "quantity",
+          "data_type": "INTEGER",
+          "nullable": true,
+          "null_fraction": 0.0,
+          "distinct_count": 5,
+          "distinct_count_exact": false,
+          "is_unique": false,
+          "min_value": 1,
+          "max_value": 5,
+          "pii": null,
+          "pii_overridden": null,
+          "value_domain": {
+            "values": [
+              {
+                "value": 2,
+                "count": 2876
+              },
+              {
+                "value": 1,
+                "count": 2861
+              },
+              {
+                "value": 5,
+                "count": 2759
+              },
+              {
+                "value": 3,
+                "count": 2758
+              },
+              {
+                "value": 4,
+                "count": 2746
+              }
+            ],
+            "elided": 0
+          },
+          "temporal_granularity": null,
+          "temporal_span": null,
+          "temporal_distinct_periods": null,
+          "temporal_missing_periods": null,
+          "temporal_largest_gap": null
+        },
+        {
+          "name": "unit_price",
+          "data_type": "DECIMAL(10,2)",
+          "nullable": true,
+          "null_fraction": 0.0,
+          "distinct_count": 11700,
+          "distinct_count_exact": true,
+          "is_unique": false,
+          "min_value": 4.5,
+          "max_value": 389.98,
+          "pii": null,
+          "pii_overridden": null,
+          "value_domain": null,
+          "temporal_granularity": null,
+          "temporal_span": null,
+          "temporal_distinct_periods": null,
+          "temporal_missing_periods": null,
+          "temporal_largest_gap": null
+        }
+      ],
+      "candidate_keys": [],
+      "grain": null,
+      "composite_keys": [],
+      "key_evidence": [
+        {
+          "columns": [
+            "order_item_id"
+          ],
+          "status": "suppressed",
+          "reason": "combinations pairing order_item_id with another column were not probed because order_item_id is already unique for 92.9% of rows, so any partner completes it by accident rather than keying the table; the duplicates in order_item_id are the finding, not a composite key"
+        }
+      ],
+      "rank_score": 0.8,
+      "data_quality": [
+        "order_item_id is not unique: 13000 distinct over 14000 rows (1000 rows would have to be removed for it to be unique, so it is unique for 92.9% of rows); joins on it will fan out",
+        "no candidate key detected; grain unknown: order_item_id is the closest thing to one, and the duplicates in it noted above are the reason; the composite-key probe found combinations that were unique and suppressed every one of them as an artifact of that, and key_evidence carries each with its reason"
+      ],
+      "findings": [],
+      "profiled_at": "2026-10-28T04:37:01.497199+00:00",
+      "semantic_models": [],
+      "values_withheld": false
+    },
+    {
+      "identifier": "dex_demo.main.orders",
+      "object_type": "table",
+      "row_count": 5000,
+      "byte_size": null,
+      "columns": [
+        {
+          "name": "order_id",
+          "data_type": "BIGINT",
+          "nullable": true,
+          "null_fraction": 0.0,
+          "distinct_count": 5000,
+          "distinct_count_exact": true,
+          "is_unique": true,
+          "min_value": 1,
+          "max_value": 5000,
+          "pii": null,
+          "pii_overridden": null,
+          "value_domain": null,
+          "temporal_granularity": null,
+          "temporal_span": null,
+          "temporal_distinct_periods": null,
+          "temporal_missing_periods": null,
+          "temporal_largest_gap": null
+        },
+        {
+          "name": "customer_id",
+          "data_type": "INTEGER",
+          "nullable": true,
+          "null_fraction": 0.0,
+          "distinct_count": 1147,
+          "distinct_count_exact": false,
+          "is_unique": false,
+          "min_value": 1,
+          "max_value": 1200,
+          "pii": null,
+          "pii_overridden": null,
+          "value_domain": null,
+          "temporal_granularity": null,
+          "temporal_span": null,
+          "temporal_distinct_periods": null,
+          "temporal_missing_periods": null,
+          "temporal_largest_gap": null
+        },
+        {
+          "name": "status",
+          "data_type": "VARCHAR",
+          "nullable": true,
+          "null_fraction": 0.0,
+          "distinct_count": 5,
+          "distinct_count_exact": false,
+          "is_unique": false,
+          "min_value": null,
+          "max_value": null,
+          "pii": null,
+          "pii_overridden": null,
+          "value_domain": {
+            "values": [
+              {
+                "value": "paid",
+                "count": 1044
+              },
+              {
+                "value": "shipped",
+                "count": 1003
+              },
+              {
+                "value": "cancelled",
+                "count": 996
+              },
+              {
+                "value": "placed",
+                "count": 989
+              },
+              {
+                "value": "delivered",
+                "count": 968
+              }
+            ],
+            "elided": 0
+          },
+          "temporal_granularity": null,
+          "temporal_span": null,
+          "temporal_distinct_periods": null,
+          "temporal_missing_periods": null,
+          "temporal_largest_gap": null
+        },
+        {
+          "name": "order_total",
+          "data_type": "DECIMAL(10,2)",
+          "nullable": true,
+          "null_fraction": 0.0,
+          "distinct_count": 4871,
+          "distinct_count_exact": true,
+          "is_unique": false,
+          "min_value": 9.91,
+          "max_value": 919.84,
+          "pii": null,
+          "pii_overridden": null,
+          "value_domain": null,
+          "temporal_granularity": null,
+          "temporal_span": null,
+          "temporal_distinct_periods": null,
+          "temporal_missing_periods": null,
+          "temporal_largest_gap": null
+        },
+        {
+          "name": "placed_at",
+          "data_type": "VARCHAR",
+          "nullable": true,
+          "null_fraction": 0.0,
+          "distinct_count": 4999,
+          "distinct_count_exact": true,
+          "is_unique": false,
+          "min_value": null,
+          "max_value": null,
+          "pii": null,
+          "pii_overridden": null,
+          "value_domain": null,
+          "temporal_granularity": null,
+          "temporal_span": null,
+          "temporal_distinct_periods": null,
+          "temporal_missing_periods": null,
+          "temporal_largest_gap": null
+        }
+      ],
+      "candidate_keys": [
+        [
+          "order_id"
+        ]
+      ],
+      "grain": [
+        "order_id"
+      ],
+      "composite_keys": [],
+      "key_evidence": [
+        {
+          "columns": [
+            "order_id"
+          ],
+          "status": "reported",
+          "reason": "order_id is unique and non-null on all 5000 rows, proven by an exact distinct count"
+        }
+      ],
+      "rank_score": 0.8623,
+      "data_quality": [
+        "placed_at is declared VARCHAR but 100% of values match the %Y-%m-%d %H:%M:%S date format; consider casting with that format"
+      ],
+      "findings": [
+        {
+          "column": "order_id",
+          "code": "nullable_grain_column",
+          "severity": "medium",
+          "detail": "order_id participates in the detected grain but the warehouse still allows it to be NULL"
+        }
+      ],
+      "profiled_at": "2026-10-28T04:37:01.569287+00:00",
+      "semantic_models": [],
+      "values_withheld": false
+    },
+    {
+      "identifier": "dex_demo.main.products",
+      "object_type": "table",
+      "row_count": 300,
+      "byte_size": null,
+      "columns": [
+        {
+          "name": "product_id",
+          "data_type": "INTEGER",
+          "nullable": true,
+          "null_fraction": 0.0,
+          "distinct_count": 300,
+          "distinct_count_exact": true,
+          "is_unique": true,
+          "min_value": 1,
+          "max_value": 300,
+          "pii": null,
+          "pii_overridden": null,
+          "value_domain": null,
+          "temporal_granularity": null,
+          "temporal_span": null,
+          "temporal_distinct_periods": null,
+          "temporal_missing_periods": null,
+          "temporal_largest_gap": null
+        },
+        {
+          "name": "sku",
+          "data_type": "VARCHAR",
+          "nullable": true,
+          "null_fraction": 0.0,
+          "distinct_count": 300,
+          "distinct_count_exact": true,
+          "is_unique": true,
+          "min_value": null,
+          "max_value": null,
+          "pii": null,
+          "pii_overridden": null,
+          "value_domain": null,
+          "temporal_granularity": null,
+          "temporal_span": null,
+          "temporal_distinct_periods": null,
+          "temporal_missing_periods": null,
+          "temporal_largest_gap": null
+        },
+        {
+          "name": "product_name",
+          "data_type": "VARCHAR",
+          "nullable": true,
+          "null_fraction": 0.0,
+          "distinct_count": 177,
+          "distinct_count_exact": false,
+          "is_unique": false,
+          "min_value": null,
+          "max_value": null,
+          "pii": null,
+          "pii_overridden": null,
+          "value_domain": null,
+          "temporal_granularity": null,
+          "temporal_span": null,
+          "temporal_distinct_periods": null,
+          "temporal_missing_periods": null,
+          "temporal_largest_gap": null
+        },
+        {
+          "name": "category",
+          "data_type": "VARCHAR",
+          "nullable": true,
+          "null_fraction": 0.0,
+          "distinct_count": 6,
+          "distinct_count_exact": false,
+          "is_unique": false,
+          "min_value": null,
+          "max_value": null,
+          "pii": null,
+          "pii_overridden": null,
+          "value_domain": {
+            "values": [
+              {
+                "value": "furniture",
+                "count": 57
+              },
+              {
+                "value": "tableware",
+                "count": 55
+              },
+              {
+                "value": "garden",
+                "count": 52
+              },
+              {
+                "value": "storage",
+                "count": 51
+              },
+              {
+                "value": "kitchen",
+                "count": 46
+              },
+              {
+                "value": "lighting",
+                "count": 39
+              }
+            ],
+            "elided": 0
+          },
+          "temporal_granularity": null,
+          "temporal_span": null,
+          "temporal_distinct_periods": null,
+          "temporal_missing_periods": null,
+          "temporal_largest_gap": null
+        },
+        {
+          "name": "list_price",
+          "data_type": "DECIMAL(10,2)",
+          "nullable": true,
+          "null_fraction": 0.0,
+          "distinct_count": 299,
+          "distinct_count_exact": true,
+          "is_unique": false,
+          "min_value": 7.0,
+          "max_value": 389.4,
+          "pii": null,
+          "pii_overridden": null,
+          "value_domain": null,
+          "temporal_granularity": null,
+          "temporal_span": null,
+          "temporal_distinct_periods": null,
+          "temporal_missing_periods": null,
+          "temporal_largest_gap": null
+        }
+      ],
+      "candidate_keys": [
+        [
+          "product_id"
+        ],
+        [
+          "sku"
+        ]
+      ],
+      "grain": [
+        "product_id"
+      ],
+      "composite_keys": [],
+      "key_evidence": [
+        {
+          "columns": [
+            "product_id"
+          ],
+          "status": "reported",
+          "reason": "product_id is unique and non-null on all 300 rows, proven by an exact distinct count"
+        },
+        {
+          "columns": [
+            "sku"
+          ],
+          "status": "reported",
+          "reason": "sku is unique and non-null on all 300 rows, proven by an exact distinct count"
+        }
+      ],
+      "rank_score": 0.5592,
+      "data_quality": [
+        "sku is a candidate key but mixes value shapes: 90% numeric, 10% 32-character hexadecimal (md5-shaped); casting to a number or comparing numerically will silently drop the non-numeric group(s)"
+      ],
+      "findings": [
+        {
+          "column": "product_id",
+          "code": "nullable_grain_column",
+          "severity": "medium",
+          "detail": "product_id participates in the detected grain but the warehouse still allows it to be NULL"
+        }
+      ],
+      "profiled_at": "2026-10-28T04:37:01.652476+00:00",
+      "semantic_models": [],
+      "values_withheld": false
+    },
+    {
+      "identifier": "dex_demo.main.returns",
+      "object_type": "table",
+      "row_count": 0,
+      "byte_size": null,
+      "columns": [
+        {
+          "name": "return_id",
+          "data_type": "INTEGER",
+          "nullable": true,
+          "null_fraction": null,
+          "distinct_count": null,
+          "distinct_count_exact": false,
+          "is_unique": null,
+          "min_value": null,
+          "max_value": null,
+          "pii": null,
+          "pii_overridden": null,
+          "value_domain": null,
+          "temporal_granularity": null,
+          "temporal_span": null,
+          "temporal_distinct_periods": null,
+          "temporal_missing_periods": null,
+          "temporal_largest_gap": null
+        },
+        {
+          "name": "order_id",
+          "data_type": "BIGINT",
+          "nullable": true,
+          "null_fraction": null,
+          "distinct_count": null,
+          "distinct_count_exact": false,
+          "is_unique": null,
+          "min_value": null,
+          "max_value": null,
+          "pii": null,
+          "pii_overridden": null,
+          "value_domain": null,
+          "temporal_granularity": null,
+          "temporal_span": null,
+          "temporal_distinct_periods": null,
+          "temporal_missing_periods": null,
+          "temporal_largest_gap": null
+        },
+        {
+          "name": "reason_code",
+          "data_type": "VARCHAR",
+          "nullable": true,
+          "null_fraction": null,
+          "distinct_count": null,
+          "distinct_count_exact": false,
+          "is_unique": null,
+          "min_value": null,
+          "max_value": null,
+          "pii": null,
+          "pii_overridden": null,
+          "value_domain": null,
+          "temporal_granularity": null,
+          "temporal_span": null,
+          "temporal_distinct_periods": null,
+          "temporal_missing_periods": null,
+          "temporal_largest_gap": null
+        },
+        {
+          "name": "returned_at",
+          "data_type": "DATE",
+          "nullable": true,
+          "null_fraction": null,
+          "distinct_count": null,
+          "distinct_count_exact": false,
+          "is_unique": null,
+          "min_value": null,
+          "max_value": null,
+          "pii": null,
+          "pii_overridden": null,
+          "value_domain": null,
+          "temporal_granularity": null,
+          "temporal_span": null,
+          "temporal_distinct_periods": null,
+          "temporal_missing_periods": null,
+          "temporal_largest_gap": null
+        }
+      ],
+      "candidate_keys": [],
+      "grain": null,
+      "composite_keys": [],
+      "key_evidence": [],
+      "rank_score": 0.35,
+      "data_quality": [
+        "empty table (no rows)"
+      ],
+      "findings": [],
+      "profiled_at": "2026-10-28T04:37:01.695998+00:00",
+      "semantic_models": [],
+      "values_withheld": false
+    },
+    {
+      "identifier": "dex_demo.main.warehouse_locations",
+      "object_type": "table",
+      "row_count": 12,
+      "byte_size": null,
+      "columns": [
+        {
+          "name": "location_id",
+          "data_type": "INTEGER",
+          "nullable": true,
+          "null_fraction": 0.0,
+          "distinct_count": 12,
+          "distinct_count_exact": true,
+          "is_unique": true,
+          "min_value": 1,
+          "max_value": 12,
+          "pii": null,
+          "pii_overridden": null,
+          "value_domain": null,
+          "temporal_granularity": null,
+          "temporal_span": null,
+          "temporal_distinct_periods": null,
+          "temporal_missing_periods": null,
+          "temporal_largest_gap": null
+        },
+        {
+          "name": "site_name",
+          "data_type": "VARCHAR",
+          "nullable": true,
+          "null_fraction": 0.0,
+          "distinct_count": 12,
+          "distinct_count_exact": true,
+          "is_unique": true,
+          "min_value": null,
+          "max_value": null,
+          "pii": {
+            "category": "name",
+            "confidence": 0.3
+          },
+          "pii_overridden": null,
+          "value_domain": null,
+          "temporal_granularity": null,
+          "temporal_span": null,
+          "temporal_distinct_periods": null,
+          "temporal_missing_periods": null,
+          "temporal_largest_gap": null
+        },
+        {
+          "name": "city",
+          "data_type": "VARCHAR",
+          "nullable": true,
+          "null_fraction": 0.0,
+          "distinct_count": 12,
+          "distinct_count_exact": true,
+          "is_unique": true,
+          "min_value": null,
+          "max_value": null,
+          "pii": {
+            "category": "address",
+            "confidence": 0.7
+          },
+          "pii_overridden": null,
+          "value_domain": null,
+          "temporal_granularity": null,
+          "temporal_span": null,
+          "temporal_distinct_periods": null,
+          "temporal_missing_periods": null,
+          "temporal_largest_gap": null
+        },
+        {
+          "name": "latitude",
+          "data_type": "DOUBLE",
+          "nullable": true,
+          "null_fraction": 0.0,
+          "distinct_count": 12,
+          "distinct_count_exact": true,
+          "is_unique": true,
+          "min_value": null,
+          "max_value": null,
+          "pii": {
+            "category": "location",
+            "confidence": 0.6
+          },
+          "pii_overridden": null,
+          "value_domain": null,
+          "temporal_granularity": null,
+          "temporal_span": null,
+          "temporal_distinct_periods": null,
+          "temporal_missing_periods": null,
+          "temporal_largest_gap": null
+        },
+        {
+          "name": "longitude",
+          "data_type": "DOUBLE",
+          "nullable": true,
+          "null_fraction": 0.0,
+          "distinct_count": 12,
+          "distinct_count_exact": true,
+          "is_unique": true,
+          "min_value": null,
+          "max_value": null,
+          "pii": {
+            "category": "location",
+            "confidence": 0.6
+          },
+          "pii_overridden": null,
+          "value_domain": null,
+          "temporal_granularity": null,
+          "temporal_span": null,
+          "temporal_distinct_periods": null,
+          "temporal_missing_periods": null,
+          "temporal_largest_gap": null
+        },
+        {
+          "name": "capacity_units",
+          "data_type": "INTEGER",
+          "nullable": true,
+          "null_fraction": 0.0,
+          "distinct_count": 12,
+          "distinct_count_exact": true,
+          "is_unique": true,
+          "min_value": 7500,
+          "max_value": 52000,
+          "pii": null,
+          "pii_overridden": null,
+          "value_domain": null,
+          "temporal_granularity": null,
+          "temporal_span": null,
+          "temporal_distinct_periods": null,
+          "temporal_missing_periods": null,
+          "temporal_largest_gap": null
+        }
+      ],
+      "candidate_keys": [
+        [
+          "location_id"
+        ],
+        [
+          "site_name"
+        ],
+        [
+          "city"
+        ],
+        [
+          "latitude"
+        ],
+        [
+          "longitude"
+        ],
+        [
+          "capacity_units"
+        ]
+      ],
+      "grain": [
+        "location_id"
+      ],
+      "composite_keys": [],
+      "key_evidence": [
+        {
+          "columns": [
+            "location_id"
+          ],
+          "status": "reported",
+          "reason": "location_id is unique and non-null on all 12 rows, proven by an exact distinct count"
+        },
+        {
+          "columns": [
+            "site_name"
+          ],
+          "status": "reported",
+          "reason": "site_name is unique and non-null on all 12 rows, proven by an exact distinct count"
+        },
+        {
+          "columns": [
+            "city"
+          ],
+          "status": "reported",
+          "reason": "city is unique and non-null on all 12 rows, proven by an exact distinct count"
+        },
+        {
+          "columns": [
+            "latitude"
+          ],
+          "status": "reported",
+          "reason": "latitude is unique and non-null on all 12 rows, proven by an exact distinct count"
+        },
+        {
+          "columns": [
+            "longitude"
+          ],
+          "status": "reported",
+          "reason": "longitude is unique and non-null on all 12 rows, proven by an exact distinct count"
+        },
+        {
+          "columns": [
+            "capacity_units"
+          ],
+          "status": "reported",
+          "reason": "capacity_units is unique and non-null on all 12 rows, proven by an exact distinct count"
+        }
+      ],
+      "rank_score": 0.344,
+      "data_quality": [],
+      "findings": [
+        {
+          "column": "location_id",
+          "code": "nullable_grain_column",
+          "severity": "medium",
+          "detail": "location_id participates in the detected grain but the warehouse still allows it to be NULL"
+        }
+      ],
+      "profiled_at": "2026-10-28T04:37:01.718542+00:00",
+      "semantic_models": [],
+      "values_withheld": false
+    },
+    {
+      "identifier": "dex_demo.main.web_events",
+      "object_type": "table",
+      "row_count": 9000,
+      "byte_size": null,
+      "columns": [
+        {
+          "name": "event_id",
+          "data_type": "VARCHAR",
+          "nullable": true,
+          "null_fraction": 0.0,
+          "distinct_count": 9000,
+          "distinct_count_exact": true,
+          "is_unique": true,
+          "min_value": null,
+          "max_value": null,
+          "pii": null,
+          "pii_overridden": null,
+          "value_domain": null,
+          "temporal_granularity": null,
+          "temporal_span": null,
+          "temporal_distinct_periods": null,
+          "temporal_missing_periods": null,
+          "temporal_largest_gap": null
+        },
+        {
+          "name": "customer_id",
+          "data_type": "INTEGER",
+          "nullable": true,
+          "null_fraction": 0.0,
+          "distinct_count": 8353,
+          "distinct_count_exact": true,
+          "is_unique": false,
+          "min_value": 900000,
+          "max_value": 959999,
+          "pii": null,
+          "pii_overridden": null,
+          "value_domain": null,
+          "temporal_granularity": null,
+          "temporal_span": null,
+          "temporal_distinct_periods": null,
+          "temporal_missing_periods": null,
+          "temporal_largest_gap": null
+        },
+        {
+          "name": "session_id",
+          "data_type": "VARCHAR",
+          "nullable": true,
+          "null_fraction": 0.0,
+          "distinct_count": 8537,
+          "distinct_count_exact": true,
+          "is_unique": false,
+          "min_value": null,
+          "max_value": null,
+          "pii": null,
+          "pii_overridden": null,
+          "value_domain": null,
+          "temporal_granularity": null,
+          "temporal_span": null,
+          "temporal_distinct_periods": null,
+          "temporal_missing_periods": null,
+          "temporal_largest_gap": null
+        },
+        {
+          "name": "page_path",
+          "data_type": "VARCHAR",
+          "nullable": true,
+          "null_fraction": 0.0,
+          "distinct_count": 8,
+          "distinct_count_exact": false,
+          "is_unique": false,
+          "min_value": null,
+          "max_value": null,
+          "pii": null,
+          "pii_overridden": null,
+          "value_domain": {
+            "values": [
+              {
+                "value": "/",
+                "count": 1157
+              },
+              {
+                "value": "/orders",
+                "count": 1154
+              },
+              {
+                "value": "/search",
+                "count": 1139
+              },
+              {
+                "value": "/account",
+                "count": 1122
+              },
+              {
+                "value": "/help",
+                "count": 1120
+              },
+              {
+                "value": "/product",
+                "count": 1118
+              },
+              {
+                "value": "/cart",
+                "count": 1111
+              },
+              {
+                "value": "/checkout",
+                "count": 1079
+              }
+            ],
+            "elided": 0
+          },
+          "temporal_granularity": null,
+          "temporal_span": null,
+          "temporal_distinct_periods": null,
+          "temporal_missing_periods": null,
+          "temporal_largest_gap": null
+        },
+        {
+          "name": "occurred_at",
+          "data_type": "BIGINT",
+          "nullable": true,
+          "null_fraction": 0.0,
+          "distinct_count": 9000,
+          "distinct_count_exact": true,
+          "is_unique": true,
+          "min_value": 1767226758151,
+          "max_value": 1775000309149,
+          "pii": null,
+          "pii_overridden": null,
+          "value_domain": null,
+          "temporal_granularity": null,
+          "temporal_span": null,
+          "temporal_distinct_periods": null,
+          "temporal_missing_periods": null,
+          "temporal_largest_gap": null
+        }
+      ],
+      "candidate_keys": [
+        [
+          "event_id"
+        ],
+        [
+          "occurred_at"
+        ]
+      ],
+      "grain": [
+        "event_id"
+      ],
+      "composite_keys": [],
+      "key_evidence": [
+        {
+          "columns": [
+            "event_id"
+          ],
+          "status": "reported",
+          "reason": "event_id is unique and non-null on all 9000 rows, proven by an exact distinct count"
+        },
+        {
+          "columns": [
+            "occurred_at"
+          ],
+          "status": "reported",
+          "reason": "occurred_at is unique and non-null on all 9000 rows, proven by an exact distinct count"
+        }
+      ],
+      "rank_score": 0.6838,
+      "data_quality": [
+        "occurred_at is declared BIGINT but 100% of values fall in the plausible unix-epoch-milliseconds range"
+      ],
+      "findings": [
+        {
+          "column": "event_id",
+          "code": "nullable_grain_column",
+          "severity": "medium",
+          "detail": "event_id participates in the detected grain but the warehouse still allows it to be NULL"
+        }
+      ],
+      "profiled_at": "2026-10-28T04:37:01.818539+00:00",
+      "semantic_models": [],
+      "values_withheld": false
+    }
+  ],
+  "relationships": [
+    {
+      "from_dataset": "dex_demo.main.order_items",
+      "from_columns": [
+        "order_id"
+      ],
+      "to_dataset": "dex_demo.main.orders",
+      "to_columns": [
+        "order_id"
+      ],
+      "kind": "inferred",
+      "confidence": 0.95,
+      "verified": false,
+      "orphan_fraction": null,
+      "declared_by": null,
+      "declaration_sources": []
+    },
+    {
+      "from_dataset": "dex_demo.main.order_items",
+      "from_columns": [
+        "product_id"
+      ],
+      "to_dataset": "dex_demo.main.products",
+      "to_columns": [
+        "product_id"
+      ],
+      "kind": "inferred",
+      "confidence": 0.95,
+      "verified": false,
+      "orphan_fraction": null,
+      "declared_by": null,
+      "declaration_sources": []
+    },
+    {
+      "from_dataset": "dex_demo.main.orders",
+      "from_columns": [
+        "customer_id"
+      ],
+      "to_dataset": "dex_demo.main.customers",
+      "to_columns": [
+        "customer_id"
+      ],
+      "kind": "inferred",
+      "confidence": 0.95,
+      "verified": false,
+      "orphan_fraction": null,
+      "declared_by": null,
+      "declaration_sources": []
+    },
+    {
+      "from_dataset": "dex_demo.main.returns",
+      "from_columns": [
+        "order_id"
+      ],
+      "to_dataset": "dex_demo.main.orders",
+      "to_columns": [
+        "order_id"
+      ],
+      "kind": "inferred",
+      "confidence": 0.85,
+      "verified": false,
+      "orphan_fraction": null,
+      "declared_by": null,
+      "declaration_sources": []
+    },
+    {
+      "from_dataset": "dex_demo.main.web_events",
+      "from_columns": [
+        "customer_id"
+      ],
+      "to_dataset": "dex_demo.main.customers",
+      "to_columns": [
+        "customer_id"
+      ],
+      "kind": "inferred",
+      "confidence": 0.6,
+      "verified": false,
+      "orphan_fraction": null,
+      "declared_by": null,
+      "declaration_sources": []
+    }
+  ],
+  "provenance": {
+    "connector": "duckdb",
+    "created_at": "2026-10-28T04:37:01.371576+00:00",
+    "updated_at": "2026-10-28T04:37:01.371576+00:00",
+    "tool_version": "1.16.3",
+    "inventory_namespaces": [
+      "dex_demo.main"
+    ]
+  }
+}

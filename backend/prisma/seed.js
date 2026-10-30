@@ -349,9 +349,26 @@ Split each number into digits and append to result. Converting to string and the
     },
   });
 
+  const enrolledDemo = await prisma.user.upsert({
+    where: { email: 'student@dsajudge.com' },
+    update: { role: 'ENROLLED' },
+    create: {
+      name: 'Demo Student',
+      email: 'student@dsajudge.com',
+      passwordHash: await bcrypt.hash('student123', 10),
+      role: 'ENROLLED',
+    },
+  });
+  await prisma.enrollment.upsert({
+    where: { id: `seed-${enrolledDemo.id}` },
+    update: {},
+    create: { id: `seed-${enrolledDemo.id}`, userId: enrolledDemo.id },
+  });
+
   console.log('✅ Seed complete!');
   console.log("   Problems: Two Sum, Longest Subarray with Sum K, Sort an Array of 0's, 1's and 2's");
   console.log('   Admin: admin@dsajudge.com / admin123');
+  console.log('   Enrolled demo: student@dsajudge.com / student123');
 }
 
 main()

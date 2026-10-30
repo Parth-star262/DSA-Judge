@@ -29,7 +29,7 @@ export default function Navbar() {
   const navLinks = [
     { name: 'Problems', href: '/problems', icon: Code2 },
     { name: 'AI Coach', href: '/interview', icon: Sparkles },
-    { name: 'Leaderboard', href: '/leaderboard', icon: Trophy },
+    ...(user?.role === 'ADMIN' ? [{ name: 'Leaderboard', href: '/leaderboard', icon: Trophy }] : []),
   ];
 
   return (

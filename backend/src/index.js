@@ -89,9 +89,11 @@ const startServer = async () => {
   const { logger } = require('./middleware/logger');
   const { exec } = require('child_process');
 
-  // Start the judge worker (Phase 2)
-  const { startWorker } = require('./workers/judgeWorker');
-  startWorker();
+  if (process.env.ENABLE_WORKER === 'true') {
+    const { startWorker } = require('./workers/judgeWorker');
+    startWorker();
+    logger.warn('[API] ENABLE_WORKER=true; prefer running the standalone worker service in production');
+  }
 
   exec('g++ --version', (err, stdout, stderr) => {
     if (err) logger.warn({ err: err.message }, '[Diagnostic] g++ not found');

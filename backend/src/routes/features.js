@@ -1,12 +1,25 @@
 const express = require('express');
 const axios = require('axios');
 const prisma = require('../services/prisma');
-const { auth } = require('../middleware/auth');
+const { auth, requireAdmin } = require('../middleware/auth');
 
 const router = express.Router();
 
 const PLATFORM_NAMES = new Set(['CODEFORCES', 'LEETCODE', 'CODECHEF', 'HACKERRANK', 'GEEKSFORGEEKS', 'ATCODER']);
 const AUTO_SYNC_PLATFORMS = new Set(['CODEFORCES', 'LEETCODE']);
+
+const normalizeProviderTimestamp = (value) => {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return null;
+  const milliseconds = numeric < 100000000000 ? numeric * 1000 : numeric;
+  const date = new Date(milliseconds);
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const sortRatingHistory = (history) => history
+  .filter((item) => item.date instanceof Date && Number.isFinite(item.rating))
+  .sort((a, b) => a.date.getTime() - b.date.getTime())
+  .map((item) => ({ ...item, date: item.date.toISOString(), rating: Math.round(item.rating) }));
 
 const countCodeforcesSolved = (submissions) => new Set(
   submissions
@@ -82,15 +95,14 @@ const getLeetCodeRatingHistory = async (username) => {
       headers: { 'Content-Type': 'application/json', 'User-Agent': 'DSA-Judge Platform Tracker' },
     });
     const contestRanking = response.data?.data?.userContestRanking;
-    const history = (response.data?.data?.userContestRankingHistory || [])
+    const history = sortRatingHistory((response.data?.data?.userContestRankingHistory || [])
       .filter((item) => item.attended && Number.isFinite(item.rating))
       .map((item) => ({
-        date: new Date((item.finishTimeInSeconds || item.contest?.startTime) * 1000).toISOString(),
-        rating: Math.round(item.rating),
+        date: normalizeProviderTimestamp(item.finishTimeInSeconds || item.contest?.startTime),
+        rating: item.rating,
         rank: item.ranking,
         contestName: item.contest?.title,
-      }))
-      .filter((item) => !Number.isNaN(new Date(item.date).getTime()));
+      })));
     if (Number.isFinite(contestRanking?.rating)) {
       return { ratingHistory: history, currentRating: Math.round(contestRanking.rating) };
     }
@@ -100,14 +112,13 @@ const getLeetCodeRatingHistory = async (username) => {
 
   try {
     const response = await axios.get(`https://leetcode-stats.tashif.codes/${encodeURIComponent(username)}/rating`, { timeout: 10000 });
-    const history = (response.data?.data?.history || [])
+    const history = sortRatingHistory((response.data?.data?.history || [])
       .map((item) => ({
-        date: new Date((item.timestamp || item.finishTimeInSeconds) * 1000).toISOString(),
+        date: normalizeProviderTimestamp(item.timestamp || item.finishTimeInSeconds),
         rating: item.rating,
         rank: item.rank || item.ranking,
         contestName: item.contestName || item.contest?.title,
-      }))
-      .filter((item) => Number.isFinite(item.rating) && !Number.isNaN(new Date(item.date).getTime()));
+      })));
     const latest = history.at(-1);
     return { ratingHistory: history, currentRating: latest?.rating || null };
   } catch {
@@ -143,8 +154,8 @@ const optionalAvatarUrl = (value) => {
   return optionalUrl(value);
 };
 
-// GET /api/leaderboard/global
-router.get('/leaderboard/global', async (req, res) => {
+// GET /api/leaderboard/global — restricted to administrators
+router.get('/leaderboard/global', auth, requireAdmin, async (req, res) => {
   try {
     const limit = Math.min(Math.max(Number(req.query.limit || 50), 1), 100);
 
@@ -369,12 +380,12 @@ router.post('/platform-accounts/codeforces/refresh', auth, async (req, res) => {
         params: { handle: account.username },
         timeout: 10000,
       });
-      const history = (ratingResponse.data?.result || []).map((item) => ({
-        date: new Date(item.ratingUpdateTimeSeconds * 1000).toISOString(),
+      const history = sortRatingHistory((ratingResponse.data?.result || []).map((item) => ({
+        date: normalizeProviderTimestamp(item.ratingUpdateTimeSeconds),
         rating: item.newRating,
         rank: item.rank,
         contestName: item.contestName,
-      }));
+      })));
       const latest = history.at(-1);
       ratingData = { ratingHistory: history, currentRating: latest?.rating || null };
     } catch {
@@ -836,4 +847,3 @@ router.get('/badges/meta', (req, res) => {
 });
 
 module.exports = router;
-

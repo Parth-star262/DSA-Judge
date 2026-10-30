@@ -6,6 +6,7 @@ import api from '@/lib/api';
 import { Trophy, Flame, Shield, Sparkles, User, Award, Crown } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { SkeletonCard } from '@/components/SkeletonLoader';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface LeaderboardUser {
   userId: string;
@@ -20,14 +21,32 @@ interface LeaderboardUser {
 export default function LeaderboardPage() {
   const [users, setUsers] = useState<LeaderboardUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
+    if (authLoading || user?.role !== 'ADMIN') return;
     api
       .get('/leaderboard/global?limit=100')
       .then((res) => setUsers(res.data || []))
       .catch((err) => console.error(err))
       .finally(() => setLoading(false));
-  }, []);
+  }, [authLoading, user?.role]);
+
+  if (authLoading) {
+    return <div className="min-h-[60vh] flex items-center justify-center"><div className="w-9 h-9 border-4 border-indigo-500/30 border-t-indigo-400 rounded-full animate-spin" /></div>;
+  }
+
+  if (!user || user.role !== 'ADMIN') {
+    return (
+      <div className="max-w-xl mx-auto px-6 py-24 text-center">
+        <div className="glass-panel rounded-3xl border border-amber-400/20 p-10">
+          <Shield size={32} className="mx-auto mb-4 text-amber-300" />
+          <h1 className="text-2xl font-extrabold text-white">Admin leaderboard</h1>
+          <p className="mt-3 text-sm leading-6 text-slate-400">This view is restricted to administrators. Student accounts cannot access ranking data.</p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

@@ -1,0 +1,3 @@
+connector: duckdb
+duckdb:
+  path: dex_demo.duckdb

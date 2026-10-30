@@ -43,7 +43,10 @@ export function streamSubmission(
   // EventSource doesn't support custom headers â€” use fetch + ReadableStream instead
   const controller = new AbortController();
 
-  const connect = async () => {
+  let terminal = false;
+  const maxRetries = 2;
+
+  const connect = async (attempt = 0): Promise<void> => {
     try {
       const response = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
@@ -51,6 +54,10 @@ export function streamSubmission(
       });
 
       if (!response.ok || !response.body) {
+        if (attempt < maxRetries && !controller.signal.aborted) {
+          await new Promise((resolve) => setTimeout(resolve, 500 * 2 ** attempt));
+          return connect(attempt + 1);
+        }
         onEvent({ type: 'error', error: 'Failed to connect to submission stream' });
         return;
       }
@@ -75,6 +82,7 @@ export function streamSubmission(
 
               // Auto-close after terminal events
               if (data.type === 'complete' || data.type === 'error' || data.type === 'timeout') {
+                terminal = true;
                 controller.abort();
                 return;
               }
@@ -84,9 +92,20 @@ export function streamSubmission(
           }
         }
       }
+      if (!terminal && attempt < maxRetries && !controller.signal.aborted) {
+        await new Promise((resolve) => setTimeout(resolve, 500 * 2 ** attempt));
+        return connect(attempt + 1);
+      }
+      if (!terminal && !controller.signal.aborted) {
+        onEvent({ type: 'error', error: 'Submission stream ended before a final result' });
+      }
     } catch (err) {
       const error = err as Error;
-      if (error?.name !== 'AbortError') {
+      if (error?.name !== 'AbortError' && !terminal && attempt < maxRetries && !controller.signal.aborted) {
+        await new Promise((resolve) => setTimeout(resolve, 500 * 2 ** attempt));
+        return connect(attempt + 1);
+      }
+      if (error?.name !== 'AbortError' && !terminal && !controller.signal.aborted) {
         onEvent({ type: 'error', error: error?.message || 'Stream connection error' });
       }
     }

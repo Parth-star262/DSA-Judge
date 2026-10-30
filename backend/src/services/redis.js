@@ -69,6 +69,23 @@ const getTestCaseCache = async (problemId) => {
   }
 };
 
+const cacheSubmissionResult = async (submissionId, result, ttlSeconds = 300) => {
+  try {
+    await redis.set(`submission:${submissionId}`, JSON.stringify(result), 'EX', ttlSeconds);
+  } catch {
+    console.error(`[Redis] Unable to cache submission result ${submissionId}`);
+  }
+};
+
+const getSubmissionResult = async (submissionId) => {
+  try {
+    const data = await redis.get(`submission:${submissionId}`);
+    return data ? JSON.parse(data) : null;
+  } catch {
+    return null;
+  }
+};
+
 module.exports = {
   redis,
   getBullmqConnection,
@@ -76,4 +93,6 @@ module.exports = {
   getProblemCache,
   setTestCaseCache,
   getTestCaseCache,
+  cacheSubmissionResult,
+  getSubmissionResult,
 };

@@ -1,11 +1,74 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: dsajudge
+      POSTGRES_USER: dsajudge
+      POSTGRES_PASSWORD: dsajudge
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dsajudge -d dsajudge"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks: [dsa-judge]
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks: [dsa-judge]
+
   backend:
     build:
       context: ./backend
-    env_file:
-      - ./backend/.env
+    environment:
+      DATABASE_URL: postgresql://dsajudge:dsajudge@postgres:5432/dsajudge
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-local-development-secret-change-me}
+      JUDGE0_API_KEY: ${JUDGE0_API_KEY:-}
+      JUDGE0_URL: ${JUDGE0_URL:-https://judge0-ce.p.rapidapi.com}
+      PORT: 5001
+      ENABLE_WORKER: "false"
+    command: sh -c "npx prisma db push --accept-data-loss && node prisma/seed.js && node src/index.js"
     ports:
       - "5002:5001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5001/health/ready', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks: [dsa-judge]
+
+  worker:
+    build:
+      context: ./backend
+    environment:
+      DATABASE_URL: postgresql://dsajudge:dsajudge@postgres:5432/dsajudge
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-local-development-secret-change-me}
+      JUDGE0_API_KEY: ${JUDGE0_API_KEY:-}
+      JUDGE0_URL: ${JUDGE0_URL:-https://judge0-ce.p.rapidapi.com}
+      ENABLE_WORKER: "true"
+    command: node src/worker.js
+    depends_on:
+      backend:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [dsa-judge]
 
   frontend:
     build:
@@ -17,3 +80,15 @@ services:
       NODE_ENV: production
     ports:
       - "3001:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks: [dsa-judge]
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  dsa-judge:
+    driver: bridge

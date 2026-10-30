@@ -31,6 +31,17 @@ model User {
   interviewSessions  InterviewSession[]
   interviewProfile   InterviewProfile?
   interviewQuestions InterviewQuestionResult[]
+  enrollments        Enrollment[]
+}
+
+model Enrollment {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enrolledAt DateTime @default(now())
+  expiresAt  DateTime?
+
+  @@index([userId])
 }
 
 enum Role {

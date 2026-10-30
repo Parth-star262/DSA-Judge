@@ -263,7 +263,7 @@ router.get('/:slug', async (req, res) => {
   }
 });
 
-// GET /api/problems/:slug/hints — 3-tier hints (level 1 free, 2&3 enrolled)
+// GET /api/problems/:slug/hints — level 1 is public to authenticated users; deeper hints require enrollment.
 router.get('/:slug/hints', auth, async (req, res) => {
   try {
     const problem = await prisma.problem.findUnique({ where: { slug: req.params.slug } });
@@ -288,7 +288,7 @@ router.get('/:slug/hints', auth, async (req, res) => {
   }
 });
 
-// GET /api/problems/:slug/editorial — enrolled only
+// GET /api/problems/:slug/editorial — all editorial content requires enrollment or admin role.
 router.get('/:slug/editorial', auth, requireEnrolled, async (req, res) => {
   try {
     const problem = await prisma.problem.findUnique({ where: { slug: req.params.slug } });

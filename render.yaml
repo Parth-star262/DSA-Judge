@@ -15,7 +15,31 @@ services:
         sync: false
       - key: JWT_SECRET
         sync: false
-# Notes:
-# - After importing this `render.yaml` in Render, open each service and add real secret values
-#   for the env vars (DATABASE_URL, REDIS_URL, JWT_SECRET, etc.) in the Render dashboard.
-# - Submissions execute synchronously in the web service; no background worker is required.
+      - key: JUDGE0_URL
+        sync: false
+      - key: JUDGE0_API_KEY
+        sync: false
+
+  - type: worker
+    name: dsa-judge-worker
+    env: node
+    plan: free
+    branch: main
+    repo: https://github.com/Parth-star262/DSA-Judge
+    rootDir: backend
+    buildCommand: npm ci && npx prisma generate
+    startCommand: npm run worker
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JUDGE0_URL
+        sync: false
+      - key: JUDGE0_API_KEY
+        sync: false
+
+# After importing this Blueprint, configure the same DATABASE_URL, REDIS_URL,
+# and JWT_SECRET on both the web service and the background worker.

@@ -37,10 +37,15 @@ jest.mock('../src/services/badgeService', () => ({
   awardBadges: jest.fn(),
 }));
 
+jest.mock('../src/services/redis', () => ({
+  cacheSubmissionResult: jest.fn(),
+}));
+
 const { executeCode } = require('../src/services/judge0');
 const { classifyComplexity } = require('../src/services/complexity');
 const { compareOutput } = require('../src/services/codeHarness');
 const { awardBadges } = require('../src/services/badgeService');
+const { cacheSubmissionResult } = require('../src/services/redis');
 
 const { judgeSubmission } = require('../src/services/submissionJudge');
 
@@ -80,6 +85,10 @@ describe('judgeSubmission', () => {
     expect(prisma.submission.update).toHaveBeenCalledWith(expect.objectContaining({
       where: { id: 'sub-1' },
       data: expect.objectContaining({ verdict: 'ACCEPTED', score: 100, passedCases: 2 }),
+    }));
+    expect(cacheSubmissionResult).toHaveBeenCalledWith('sub-1', expect.objectContaining({
+      verdict: 'ACCEPTED',
+      userId: 'user-1',
     }));
     expect(awardBadges).toHaveBeenCalled();
   });

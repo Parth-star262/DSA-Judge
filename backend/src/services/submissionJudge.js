@@ -4,6 +4,7 @@ const { classifyComplexity } = require('./complexity');
 const { estimateSpaceComplexity, getOptimalSpaceComplexity } = require('./spaceComplexity');
 const { buildExecutableCode, compareOutput } = require('./codeHarness');
 const { awardBadges } = require('./badgeService');
+const { cacheSubmissionResult } = require('./redis');
 
 
 const startOfLocalDay = (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate());
@@ -168,6 +169,8 @@ const judgeSubmission = async ({ submissionId, userId, problem, code, language }
     data: { verdict, score, passedCases, executionTime, complexityEstimate },
   });
 
+  await cacheSubmissionResult(submissionId, { ...result, userId });
+
   await updateProgressAndStreak({ userId, problemId: problem.id, verdict });
 
   // Phase 4.2 — Auto-award badges
@@ -183,4 +186,3 @@ const judgeSubmission = async ({ submissionId, userId, problem, code, language }
   return { ...result, newBadges };
 };
 module.exports = { judgeSubmission };
-

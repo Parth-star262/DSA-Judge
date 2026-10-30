@@ -302,7 +302,9 @@ export default function ProblemPage() {
     }
   }
 
-  const pollSubmissionResult = async (submissionId: string) => {
+  // SSE is the primary delivery mechanism; this bounded poll is only a fallback
+  // for environments that block streaming connections.
+  const fallbackPollSubmissionResult = async (submissionId: string) => {
     const maxWaitMs = 5 * 60 * 1000;
     const startedAt = Date.now();
 
@@ -358,7 +360,7 @@ export default function ProblemPage() {
         });
       });
     } catch {
-      return pollSubmissionResult(submissionId);
+      return fallbackPollSubmissionResult(submissionId);
     }
   };
 
@@ -845,6 +847,16 @@ export default function ProblemPage() {
                       rows={3}
                     />
                   </div>
+                  <div>
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">Expected Output <span className="normal-case font-normal text-slate-500">(optional)</span></div>
+                    <textarea
+                      value={customExpectedOutput}
+                      onChange={(e) => setCustomExpectedOutput(e.target.value)}
+                      placeholder="Add an expected output to compare against"
+                      className="w-full bg-[#080a22] border border-white/10 rounded-lg p-3 text-xs font-mono text-slate-200 focus:outline-none focus:border-indigo-500"
+                      rows={3}
+                    />
+                  </div>
                 </div>
               )}
 
@@ -859,6 +871,36 @@ export default function ProblemPage() {
                   language={language}
                   token={typeof window !== 'undefined' ? localStorage.getItem('token') || undefined : undefined}
                 />
+              )}
+
+              {(runResult || submitResult) && !runLoading && !submitLoading && (
+                <div className="rounded-xl border border-white/10 bg-[#080a22] p-4 space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">Output comparison</h3>
+                      <p className="text-[11px] text-slate-500 mt-1">
+                        {runMode === 'sample' ? `Sample case ${activeTestCase + 1}` : 'Custom input'}
+                      </p>
+                    </div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Exact run</span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-300 mb-1">Expected output</div>
+                      <pre className="min-h-16 whitespace-pre-wrap break-words rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3 font-mono text-xs text-emerald-200">
+                        {runMode === 'sample'
+                          ? sampleCases[activeTestCase]?.expectedOutput || 'Not provided'
+                          : customExpectedOutput || 'Not provided'}
+                      </pre>
+                    </div>
+                    <div>
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-indigo-300 mb-1">Your output</div>
+                      <pre className="min-h-16 whitespace-pre-wrap break-words rounded-lg border border-indigo-500/20 bg-indigo-500/5 p-3 font-mono text-xs text-slate-200">
+                        {(runResult?.output || submitResult?.firstFailedCase?.actualOutput || '').trim() || 'No output returned'}
+                      </pre>
+                    </div>
+                  </div>
+                </div>
               )}
 
               {/* AI Review Panel */}

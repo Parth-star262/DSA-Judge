@@ -7,6 +7,7 @@ const { estimateSpaceComplexity, getOptimalSpaceComplexity } = require('../servi
 const { judgeSubmission } = require('../services/submissionJudge');
 const { getQueue, getQueueEvents } = require('../workers/judgeWorker');
 const { submissionLimiter } = require('../middleware/security');
+const { getSubmissionResult } = require('../services/redis');
 
 const router = express.Router();
 
@@ -69,6 +70,18 @@ router.post('/', auth, submissionLimiter, async (req, res) => {
 // GET /api/submissions/:id/stream — SSE: streams live verdict updates
 router.get('/:id/stream', auth, async (req, res) => {
   const submissionId = req.params.id;
+  const cachedResult = await getSubmissionResult(submissionId);
+  if (cachedResult) {
+    if (cachedResult.userId !== req.user.id && req.user.role !== 'ADMIN') {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    const { userId: _userId, ...result } = cachedResult;
+    res.write(`data: ${JSON.stringify({ type: 'complete', result })}\n\n`);
+    return res.end();
+  }
 
   // Verify submission belongs to user
   const submission = await prisma.submission.findUnique({ where: { id: submissionId } });
@@ -222,6 +235,14 @@ router.get('/user/history', auth, async (req, res) => {
 // GET /api/submissions/:id — poll result (fallback if SSE not used)
 router.get('/:id', auth, async (req, res) => {
   try {
+    const cachedResult = await getSubmissionResult(req.params.id);
+    if (cachedResult) {
+      if (cachedResult.userId !== req.user.id && req.user.role !== 'ADMIN') {
+        return res.status(403).json({ error: 'Forbidden' });
+      }
+      const { userId: _userId, ...result } = cachedResult;
+      return res.json(result);
+    }
     const submission = await prisma.submission.findUnique({ where: { id: req.params.id } });
     if (!submission) return res.status(404).json({ error: 'Submission not found' });
     if (submission.userId !== req.user.id && req.user.role !== 'ADMIN') {
